@@ -7,10 +7,16 @@
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
+<link rel="stylesheet" type="text/css" href="http://www.maplink.com.br/Content/Layoutv2.css" media="screen" />
 <script type="text/javascript" src="http://services.maplink.com.br/maplinkapi2/api.ashx?v=4&key=ymUFb0RjwnO6N1zXGKpFauF1vwLPTLvrGLSvaBVybCBPTM9qGBu9QR=="></script>
 <body>
 <div id="divMap" style="width: 700px; height: 600px; border: solid 1px black;"></div>
-<div id="divInfo"></div>
+<!--div id="divInfo"></div-->
+
+<br>
+<form method="get" action="http://localhost:8080">
+    <button type="submit">Voltar</button>
+</form>
 </body>
 <script type="text/javascript">
 
