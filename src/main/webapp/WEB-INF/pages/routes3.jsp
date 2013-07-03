@@ -1,5 +1,5 @@
 <html>
-	<script type="text/javascript" src="http://services.maplink.com.br/maplinkapi2/api.ashx?v=4&key=ymUFb0RjwnO6N1zXGKpFauF1vwLPTLvrGLSvaBVybCBPTM9qGBu9QR=="></script>
+	<script type="text/javascript" src="http://services.maplink.com.br/maplinkapi2/api.ashx?v=4&key=yJUmbw2jPupFdCg2ymUFa0RkaDOFbK9myKOQT02kaDOFbK9myKOQT03zvLvPSm3g"></script>
     <link rel="stylesheet" type="text/css" href="http://www.maplink.com.br/Content/Layoutv2.css" media="screen" />
     <body>
       <div id="divMap" style="width: 700px; height: 600px; border: solid 1px black;"></div>
