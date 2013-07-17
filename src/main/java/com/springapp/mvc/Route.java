@@ -9,32 +9,31 @@ package com.springapp.mvc;
  */
 public class Route{
 
-    public Integer numberBus;
-    public Integer numberStops;
+    public Integer quantityBus;
+    public Integer quantityClients;
+    public Integer busCapacity;
 
-    public Integer getMaximumClientPerBus() {
-        return maximumClientPerBus;
+    public Integer getBusCapacity() {
+        return busCapacity;
     }
 
-    public void setMaximumClientPerBus(Integer maximumClientPerBus) {
-        this.maximumClientPerBus = maximumClientPerBus;
+    public void setBusCapacity(Integer busCapacity) {
+        this.busCapacity = busCapacity;
+    }    
+
+    public Integer getQuantityBus() {
+        return quantityBus;
     }
 
-    public Integer maximumClientPerBus;
-
-    public Integer getNumberBus() {
-        return numberBus;
+    public void setQuantityBus(Integer quantityBus) {
+        this.quantityBus = quantityBus;
+    }
+    
+    public Integer getQuantityClients() {
+        return quantityClients;
     }
 
-    public void setNumberBus(Integer numberBus) {
-        this.numberBus = numberBus;
-    }
-
-    public Integer getNumberStops() {
-        return numberStops;
-    }
-
-    public void setNumberStops(Integer numberStops) {
-        this.numberStops = numberStops;
+    public void setQuantityClients(Integer quantityClients) {
+        this.quantityClients = quantityClients;
     }
 }

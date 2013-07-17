@@ -13,13 +13,13 @@
 <br>
 <form:form method="post" action="addContact.html">
     <label>Numero de Veículos: </label>
-    <form:input path="numberBus" />
+    <form:input path="quantityBus" />
     <br/>
-    <label>Número total de paradas: </label>
-    <form:input path="numberStops" />
+    <label>Número total de pessoas: </label>
+    <form:input path="quantityClients" />
     <br/>
-    <label> Número máximo de paradas por veículo: </label>
-    <form:input path="maximumClientPerBus" />
+    <label> Capacidade de cada veículo: </label>
+    <form:input path="busCapacity" />
     <br/>
     <input type="submit" value="Gerar Rota"/>
 

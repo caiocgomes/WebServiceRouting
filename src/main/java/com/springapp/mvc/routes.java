@@ -3,23 +3,28 @@ package com.springapp.mvc;
 
 import com.maplink.framework.IMonteCarlo;
 import com.maplink.framework.routing.vehiclerouting.DistanceMatrix;
+import com.maplink.framework.routing.vehiclerouting.location.LatLng;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.IMonteCarloDecisionRule;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.MetropolisRule;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.MonteCarlo;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.costFunctions.ICostFunction;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.costFunctions.ICostCalculator;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.costFunctions.MinimizeMaximumTimeAndDistance;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.distanceCalculator.DelayedDistanceMatrix;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.distanceCalculator.IDistanceComputer;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.distanceCalculator.IDistanceMatrix;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.distanceCalculator.StraightLineDistance;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.distanceCalculator.CachedDistanceMatrix;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.distanceCalculator.IDistanceCalculator;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.distanceCalculator.ICachedDistanceCalculator;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.distanceCalculator.StraightLineDistanceCalculator;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.permutator.IPermutator;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.permutator.PermutingAnnealingPermutator;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.transportable.ITransportable;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.transportable.SimpleTimeablePerson;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.transporter.ITransporter;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.transporter.SimpleBus;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.transporterConteiner.ITransporterContainer;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.transporterConteiner.SimpleVehicleContainer;
+import com.maplink.framework.routing.vehiclerouting.timeableFunctions.Timeable;
+import com.maplink.framework.routing.vehiclerouting.transportable.ITransportable;
+import com.maplink.framework.routing.vehiclerouting.transportable.SimpleTimeablePerson;
+import com.maplink.framework.routing.vehiclerouting.transportable.factory.TransportableFactory;
+import com.maplink.framework.routing.vehiclerouting.transportable.requests.TransportableRequest;
+import com.maplink.framework.routing.vehiclerouting.transporter.ITransporter;
+import com.maplink.framework.routing.vehiclerouting.transporter.SimpleBus;
+import com.maplink.framework.routing.vehiclerouting.transporterConteiner.ITransporterContainer;
+import com.maplink.framework.routing.vehiclerouting.transporterConteiner.SimpleVehicleContainer;
+import com.maplink.framework.routing.vehiclerouting.types.TransportableType;
 import com.maplink.framework.routing.vehiclerouting.webservice.route.Point;
 import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteStop;
 import org.springframework.core.io.ClassPathResource;
@@ -45,12 +50,12 @@ import java.util.*;
 @RequestMapping("/addContact")
 public class routes {
     @RequestMapping(method = RequestMethod.POST)
-         public String getRoutes(@ModelAttribute("SpringWeb") Route routeParam, ModelMap model){
+         public String getRoutes(@ModelAttribute("SpringWeb") Route routeParam, ModelMap model) throws Exception{
 
         routes route = new routes();
 
-        if (routeParam.getNumberBus()*routeParam.getMaximumClientPerBus() >= routeParam.getNumberStops()){
-            String ans = route.start(routeParam.getNumberStops(),routeParam.getNumberBus(),routeParam.getMaximumClientPerBus());
+        if (routeParam.getQuantityBus()*routeParam.getBusCapacity() >= routeParam.getQuantityClients()){
+            String ans = route.start(routeParam.getQuantityClients(),routeParam.getQuantityBus(),routeParam.getBusCapacity());
             model.addAttribute("route",ans);
             return "routes2";
         }
@@ -61,20 +66,21 @@ public class routes {
 
     }
 
-    public String start(Integer numberOfStoppingPoints, Integer numberOfVehicles,Integer maximumClientPerBus){
+    @SuppressWarnings("unchecked")
+	public String start(Integer quantityClients, Integer quantityBus,Integer busCapacity) throws Exception{
         //Integer numberOfStoppingPoints = 60;
         //Integer numberOfVehicles = 1;
 
 
-        String current = null;
-        String currentDir = new File(".").getAbsolutePath();
-        System.out.println(currentDir);
-
-        DistanceMatrix distanceMatrixObj = new DistanceMatrix();
-
-        //Map<Point,Map<Point,Double>> distanceDict = distanceMatrixObj.DeserializerDistanceMatrix("myobject2.data");
-
-        Map<Point,Map<Point,Double>> distanceDict =  distanceMatrixObj.CreateRandomMatrix(numberOfStoppingPoints + 2);
+//        String current = null;
+//        String currentDir = new File(".").getAbsolutePath();
+//        System.out.println(currentDir);
+//
+//        DistanceMatrix distanceMatrixObj = new DistanceMatrix();
+//
+//        //Map<Point,Map<Point,Double>> distanceDict = distanceMatrixObj.DeserializerDistanceMatrix("myobject2.data");
+//
+//        Map<Point,Map<Point,Double>> distanceDict =  distanceMatrixObj.CreateRandomMatrix(numberOfStoppingPoints + 2);
 
         /*
         try
@@ -94,10 +100,9 @@ public class routes {
         */
 
 
-        distanceDict = null;
+//        distanceDict = null;
 
-
-
+    	 Map<Point,Map<Point,Double>> distanceDict;
 
         try {
 
@@ -105,53 +110,52 @@ public class routes {
            // FileInputStream fileIn =
             //        new FileInputStream("distanceDict.ttt");
 
-
-
             //ObjectInputStream in = new ObjectInputStream(fileIn);
             InputStream in = getClass().getResourceAsStream("/distanceDict.ttt");
             ObjectInputStream objectInputStream = new ObjectInputStream(in);
-
-            distanceDict = (Map<Point,Map<Point,Double>> ) objectInputStream.readObject();
+            
+            distanceDict =  (Map<Point,Map<Point,Double>> ) objectInputStream.readObject();
             in.close();
             //fileIn.close();
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (ClassNotFoundException e) {
+            distanceDict = Common.CreateRandomMatrix(quantityClients + 2);
+        } catch (ClassNotFoundException e) { 
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            distanceDict = Common.CreateRandomMatrix(quantityClients + 2);
         }
 
-
+        // pq pega apenas o keyset?
         Object[] objectPoint = distanceDict.keySet().toArray();
         //Point[] arrayPoint = (Point[])objectPoint;
         Map<Integer, ITransportable> monteCarloObjectsStore = new HashMap<Integer,ITransportable>();
 
-        for (int i = 0 ; i < numberOfStoppingPoints + 2; i++){
-            Object pointObj = objectPoint[i];
+        for (int i = 0 ; i < quantityClients + 2; i++){
+        	Point pointObj = (Point)objectPoint[i];
             //monteCarloObjectsStore.put(i,new SimplePerson(i + 0,(Point)pointObj));
             Calendar date = new GregorianCalendar(2015,1,1);
 
-            monteCarloObjectsStore.put(i,new SimpleTimeablePerson((Point)pointObj,i, date));
+            monteCarloObjectsStore.put(i, TransportableFactory.CreateObject(new TransportableRequest(i, new LatLng(pointObj.getY(), pointObj.getX()), 
+            		new LatLng(pointObj.getY(), pointObj.getX()), TransportableType.Person)));
         }
 
-
-
         //Integer numberOfStoppingPoints = distanceDict.keySet().size();
-
 
         ITransporterContainer vehicleContainer = new SimpleVehicleContainer();
 
         ITransporter vehicle = null;
 
-        for (int i = 0 ; i < numberOfVehicles ; i++){
-            vehicle = new SimpleBus(maximumClientPerBus);
+        // adiciona 2 passageiros(pontos) em cada veiculo
+        for (int i = 0 ; i < quantityBus ; i++){
+            vehicle = new SimpleBus(busCapacity);
             vehicle.add(monteCarloObjectsStore.get(0));
-            vehicle.add(monteCarloObjectsStore.get(numberOfStoppingPoints));
+            vehicle.add(monteCarloObjectsStore.get(quantityClients));
             vehicleContainer.add(vehicle);
         }
 
         Integer j = 0;
         vehicle = vehicleContainer.get(j);
-        for (int i = 1 ; i < numberOfStoppingPoints; i++){
+        for (int i = 1 ; i < quantityClients; i++){
             if (vehicle.isFull()){
                 j++;
                 vehicle = vehicleContainer.get(j);
@@ -160,12 +164,7 @@ public class routes {
 
             vehicle.add(1,monteCarloObjectsStore.get(i));
 
-
         }
-
-
-
-
 
 
 
@@ -175,17 +174,17 @@ public class routes {
 
 
 
-        IDistanceComputer distanceComputer = new StraightLineDistance();
+        IDistanceCalculator distanceComputer = new StraightLineDistanceCalculator();
         //IDistanceComputer distanceComputer = new RealDistance();
-        IDistanceMatrix distanceMatrix = new DelayedDistanceMatrix(distanceComputer);
+        ICachedDistanceCalculator distanceMatrix = new CachedDistanceCalculator(distanceComputer);
 
 
         //ICostFunction costFunction = new TotalDistanceCost(distanceMatrix);
 
 
-        ICostFunction costFunction = new MinimizeMaximumTimeAndDistance(distanceMatrix);
-
-        vehicleContainer.setContainerCost(costFunction.computeCost(vehicleContainer));
+        ICostCalculator costFunction = new MinimizeMaximumTimeAndDistance(distanceMatrix);
+       
+        vehicleContainer.setContainerCost(costFunction.getCost(vehicleContainer));
         IMonteCarlo monteCarlo = new MonteCarlo(decisionRule,permutation,costFunction,vehicleContainer);
         ITransporterContainer optimisedStrategy = ((MonteCarlo)monteCarlo).run();
 
@@ -210,10 +209,10 @@ public class routes {
 
                 StringBuilder csvPoints =  new StringBuilder();
                 if (csvString.length() == 0){
-                    csvPoints.append("[").append(monteCarloObject.localization().getX()).append(",").append(monteCarloObject.localization().getY()).append("]");
+                    csvPoints.append("[").append(monteCarloObject.getStartPoint().getLng()).append(",").append(monteCarloObject.getStartPoint().getLat()).append("]");
                 }
                 else{
-                    csvPoints.append(",\n[").append(monteCarloObject.localization().getX()).append(",").append(monteCarloObject.localization().getY()).append("]");
+                    csvPoints.append(",\n[").append(monteCarloObject.getStartPoint().getLng()).append(",").append(monteCarloObject.getStartPoint().getLat()).append("]");
                 }
 
                 csvString.append(csvPoints);
