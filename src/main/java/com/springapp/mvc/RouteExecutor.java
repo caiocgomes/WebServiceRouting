@@ -1,16 +1,10 @@
 package com.springapp.mvc;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import org.joda.time.Period;
 import org.springframework.stereotype.Controller;
@@ -19,51 +13,37 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-
 import com.maplink.framework.routing.vehiclerouting.classes.Tuple;
+import com.maplink.framework.routing.vehiclerouting.costCalculator.ICostCalculator;
+import com.maplink.framework.routing.vehiclerouting.costCalculator.factory.CostCalculatorFactory;
+import com.maplink.framework.routing.vehiclerouting.costCalculator.requests.CostCalculatorRequest;
+import com.maplink.framework.routing.vehiclerouting.distanceCalculator.IDistanceCalculator;
+import com.maplink.framework.routing.vehiclerouting.distanceCalculator.factory.DistanceCalculatorFactory;
+import com.maplink.framework.routing.vehiclerouting.distanceCalculator.requests.DistanceCalculatorRequest;
 import com.maplink.framework.routing.vehiclerouting.location.LatLng;
 import com.maplink.framework.routing.vehiclerouting.location.TimeableTransportableLatLng;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.IMonteCarlo;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.IMonteCarloDecisionRule;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.MetropolisRule;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.MonteCarlo;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.Factories.MonteCarloDecisionRuleFactory;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.Factories.MonteCarloFactory;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.Requests.MonteCarloDecisionRuleRequest;
-import com.maplink.framework.routing.vehiclerouting.montecarlo.Requests.MonteCarloRequest;
-import com.maplink.framework.routing.vehiclerouting.costCalculator.ICostCalculator;
-import com.maplink.framework.routing.vehiclerouting.costCalculator.MinimizeMaximumTimeAndDistance;
-import com.maplink.framework.routing.vehiclerouting.costCalculator.Factory.CostCalculatorFactory;
-import com.maplink.framework.routing.vehiclerouting.costCalculator.Requests.CostCalculatorRequest;
-import com.maplink.framework.routing.vehiclerouting.distanceCalculator.CachedDistanceCalculator;
-import com.maplink.framework.routing.vehiclerouting.distanceCalculator.IDistanceCalculator;
-import com.maplink.framework.routing.vehiclerouting.distanceCalculator.StraightLineDistanceCalculator;
-import com.maplink.framework.routing.vehiclerouting.distanceCalculator.Factory.DistanceCalculatorFactory;
-import com.maplink.framework.routing.vehiclerouting.distanceCalculator.Requests.DistanceCalculatorRequest;
-import com.maplink.framework.routing.vehiclerouting.permutator.IPermutator;
-import com.maplink.framework.routing.vehiclerouting.permutator.PermutingAnnealingPermutator;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.factories.MonteCarloDecisionRuleFactory;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.factories.MonteCarloFactory;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.requests.MonteCarloDecisionRuleRequest;
+import com.maplink.framework.routing.vehiclerouting.montecarlo.requests.MonteCarloRequest;
+import com.maplink.framework.routing.vehiclerouting.permutator.TransportableAnnealingPermutator;
 import com.maplink.framework.routing.vehiclerouting.timeableFunctions.ITimeCalculator;
 import com.maplink.framework.routing.vehiclerouting.timeableFunctions.Timeable;
-import com.maplink.framework.routing.vehiclerouting.timeableFunctions.Factory.TimeCalculatorFactory;
-import com.maplink.framework.routing.vehiclerouting.timeableFunctions.Requests.TimeCalculatorRequest;
+import com.maplink.framework.routing.vehiclerouting.timeableFunctions.factory.TimeCalculatorFactory;
+import com.maplink.framework.routing.vehiclerouting.timeableFunctions.requests.TimeCalculatorRequest;
 import com.maplink.framework.routing.vehiclerouting.transportable.ITimeableTransportable;
-import com.maplink.framework.routing.vehiclerouting.transportable.ITransportable;
 import com.maplink.framework.routing.vehiclerouting.transportable.factory.TransportableFactory;
 import com.maplink.framework.routing.vehiclerouting.transportable.requests.TimeableTransportableRequest;
-import com.maplink.framework.routing.vehiclerouting.transportable.requests.TransportableRequest;
 import com.maplink.framework.routing.vehiclerouting.transporter.ITimeableTransporter;
-import com.maplink.framework.routing.vehiclerouting.transporter.ITransporter;
-import com.maplink.framework.routing.vehiclerouting.transporter.SimpleBus;
 import com.maplink.framework.routing.vehiclerouting.transporter.factory.TransporterFactory;
 import com.maplink.framework.routing.vehiclerouting.transporter.requests.TimeableTransporterRequest;
 import com.maplink.framework.routing.vehiclerouting.transporterConteiner.ITransporterContainer;
-import com.maplink.framework.routing.vehiclerouting.transporterConteiner.SimpleVehicleContainer;
-import com.maplink.framework.routing.vehiclerouting.transporterConteiner.Factory.TransporterContainerFactory;
-import com.maplink.framework.routing.vehiclerouting.transporterConteiner.Requests.TransporterContainerRequest;
+import com.maplink.framework.routing.vehiclerouting.transporterConteiner.factory.TransporterContainerFactory;
+import com.maplink.framework.routing.vehiclerouting.transporterConteiner.requests.TransporterContainerRequest;
 import com.maplink.framework.routing.vehiclerouting.types.DistanceType;
 import com.maplink.framework.routing.vehiclerouting.types.TransportableType;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.Point;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteStop;
 
 @Controller
 @RequestMapping("/addContact")
@@ -114,7 +94,6 @@ public class RouteExecutor {
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
 	public static String start(Integer quantityClients, Integer quantityBus,Integer busCapacity) throws Exception{
 		
 		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
@@ -147,9 +126,9 @@ public class RouteExecutor {
 			Calendar endDate = new GregorianCalendar();
 			endDate.setTimeInMillis(startDate.getTimeInMillis() + pointSet.get(point).getItem2().getMillis());		
 			
-			idClient_Client.put(count, (ITimeableTransportable)TransportableFactory.CreateObject(new TimeableTransportableRequest(count, point, pointSet.get(point).getItem1(), 
-					TransportableType.Person, new Timeable(startDate, tolerance), 
-					new Timeable(endDate, tolerance), busStartDate)));	
+			idClient_Client.put(count, (ITimeableTransportable)TransportableFactory.CreateObject(new TimeableTransportableRequest(count, TransportableType.Person, 
+					new TimeableTransportableLatLng(point, new Timeable(startDate, tolerance), false), 
+					new TimeableTransportableLatLng(point, new Timeable(endDate, tolerance), true))));	
 			
 			count++;	
 		}
@@ -171,12 +150,11 @@ public class RouteExecutor {
 		for (int id: idClient_Client.keySet()){
 			
 			vehicle = getNotFullVehicle(vehicleContainer, quantityBus);			
-			vehicle.add(new TimeableTransportableLatLng(id, idClient_Client.get(id).getStartPoint(), idClient_Client.get(id).getStartPointInfo(), false));
-			vehicle.add(new TimeableTransportableLatLng(id, idClient_Client.get(id).getEndPoint(), idClient_Client.get(id).getEndPointInfo(), true));
+			vehicle.put(id, idClient_Client.get(id));			
 		}	
 				
 		IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory.CreateObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
-		IMonteCarlo monteCarlo = MonteCarloFactory.CreateObject(new MonteCarloRequest(decisionRule, vehicleContainer, new PermutingAnnealingPermutator()));
+		IMonteCarlo monteCarlo = MonteCarloFactory.CreateObject(new MonteCarloRequest(decisionRule, vehicleContainer, new TransportableAnnealingPermutator()));
 		ITransporterContainer containerWithOptimisedStrategy = monteCarlo.run();
 
 		StringBuilder csvString;
@@ -189,7 +167,7 @@ public class RouteExecutor {
 //			List<RouteStop> routesList = new ArrayList<RouteStop>();
 			csvString = new StringBuilder();
 
-			for (TimeableTransportableLatLng monteCarloPoint : vehicleRoute){
+			for (TimeableTransportableLatLng monteCarloPoint : vehicleRoute.getTrajetory()){
 				StringBuilder csvPoints =  new StringBuilder();
 				if (csvString.length() == 0){
 					csvPoints.append("[").append(monteCarloPoint.getLatLng().getLng()).append(",").append(monteCarloPoint.getLatLng().getLat()).append("]");
@@ -208,7 +186,5 @@ public class RouteExecutor {
 		System.out.println("Caio: It's ended: Now we plot");
 		return csvStringFinal.toString();
 
-
 	}
-
 }
