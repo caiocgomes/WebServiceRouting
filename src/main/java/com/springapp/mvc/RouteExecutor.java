@@ -3,8 +3,10 @@ package com.springapp.mvc;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.joda.time.Period;
 import org.springframework.stereotype.Controller;
@@ -96,10 +98,22 @@ public class RouteExecutor {
 
 	public static String start(Integer quantityClients, Integer quantityBus,Integer busCapacity) throws Exception{
 		
-		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
+//		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
+		int totalPairPoints = 8 + 1; // pares de pontos dos clientes e par de pontos do onibus
 		
 		// obtem uma lista de pares de pontos aleatorios com periodo entre eles
 		Map<LatLng, Tuple<LatLng, Period>> pointSet = Common.CreatePointsWithPeriod(totalPairPoints); 
+		
+		Set<LatLng> setTest = new HashSet<LatLng>();
+		for (LatLng point : pointSet.keySet()) {
+			if (setTest.contains(point)) {
+				System.out.println("1: " + point + ", 2: " + pointSet.get(point).getItem1() + ", period: " + pointSet.get(point).getItem2());
+			}
+			else {
+				setTest.add(point);
+			}
+//			System.out.println("1: " + point + ", 2: " + pointSet.get(point).getItem1() + ", period: " + pointSet.get(point).getItem2());
+		}
 
 		// Map de clientes
 		Map<Integer, ITimeableTransportable> idClient_Client = new HashMap<Integer,ITimeableTransportable>();
@@ -116,19 +130,20 @@ public class RouteExecutor {
 		for (LatLng point: pointSet.keySet()){		
 			
 			// é feio, mas é apenas para testes
-			if (count > totalPairPoints)
+			if (count >= totalPairPoints)
 			{
 				busStartPoint = point;
 				busEndPoint = pointSet.get(point).getItem1();
+				break;
 			}			
 
 			Calendar startDate = getDate();
 			Calendar endDate = new GregorianCalendar();
-			endDate.setTimeInMillis(startDate.getTimeInMillis() + pointSet.get(point).getItem2().getMillis());		
+			endDate.setTimeInMillis(startDate.getTimeInMillis() + pointSet.get(point).getItem2().toStandardDuration().getMillis());		
 			
 			idClient_Client.put(count, (ITimeableTransportable)TransportableFactory.CreateObject(new TimeableTransportableRequest(count, TransportableType.Person, 
-					new TimeableTransportableLatLng(point, new Timeable(startDate, tolerance), false), 
-					new TimeableTransportableLatLng(point, new Timeable(endDate, tolerance), true))));	
+					new TimeableTransportableLatLng(count, point, new Timeable(startDate, tolerance), false), 
+					new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, tolerance), true))));	
 			
 			count++;	
 		}
@@ -155,19 +170,31 @@ public class RouteExecutor {
 				
 		IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory.CreateObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
 		IMonteCarlo monteCarlo = MonteCarloFactory.CreateObject(new MonteCarloRequest(decisionRule, vehicleContainer, new TransportableAnnealingPermutator()));
+		
+		System.out.println("Start: " + GregorianCalendar.getInstance().getTime());
 		ITransporterContainer containerWithOptimisedStrategy = monteCarlo.run();
+		System.out.println("End: " + GregorianCalendar.getInstance().getTime());
 
 		StringBuilder csvString;
 		StringBuilder csvStringFinal = new StringBuilder();
 		count = 1;
 
-		for (ITimeableTransporter vehicleRoute : containerWithOptimisedStrategy){
+		for (ITimeableTransporter transporter : containerWithOptimisedStrategy){
 
 //			List<TimeableTransportableLatLng> monteCarloObjectToShow = (List<TimeableTransportableLatLng>)vehicleRoute;
 //			List<RouteStop> routesList = new ArrayList<RouteStop>();
 			csvString = new StringBuilder();
+			System.out.println("Trajetoria: " + count);
+			System.out.println("TrajetoriaEndDateTime: " + transporter.getCurrentDeliveryTime().getTime());
 
-			for (TimeableTransportableLatLng monteCarloPoint : vehicleRoute.getTrajetory()){
+			for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajetory()){
+				System.out.println("Id: " + monteCarloPoint.getId() 
+						+ ", index: " + monteCarloPoint.getIndex()
+						+ ", latlng: " + monteCarloPoint.getLatLng()
+						+ ", isEnd: " + monteCarloPoint.isEnd()
+						+ ", originalDateTime: " + monteCarloPoint.getTime().getDateTime().getTime()
+						+ ", arrivalDateTime: " + monteCarloPoint.getCurrentDeliveryTime().getTime());
+				
 				StringBuilder csvPoints =  new StringBuilder();
 				if (csvString.length() == 0){
 					csvPoints.append("[").append(monteCarloPoint.getLatLng().getLng()).append(",").append(monteCarloPoint.getLatLng().getLat()).append("]");
