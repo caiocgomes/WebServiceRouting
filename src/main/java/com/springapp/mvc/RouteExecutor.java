@@ -101,7 +101,7 @@ public class RouteExecutor {
 	public static String start(Integer quantityClients, Integer quantityBus,Integer busCapacity) throws Exception{
 		
 //		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
-		int totalPairPoints = 8 + 1; // pares de pontos dos clientes e par de pontos do onibus
+		int totalPairPoints = 15 + 1; // pares de pontos dos clientes e par de pontos do onibus
 		
 		// obtem uma lista de pares de pontos aleatorios com periodo entre eles
 		Map<LatLng, Tuple<LatLng, Period>> pointSet = Common.CreatePointsWithPeriod(totalPairPoints); 
@@ -190,7 +190,7 @@ public class RouteExecutor {
 				System.out.println("Trajetoria: " + count);
 				System.out.println("TrajetoriaEndDateTime: " + transporter.getCurrentDeliveryTime().getTime());
 	
-				for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajetory()){
+				for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajectory()){
 					System.out.println("Id: " + monteCarloPoint.getId() 
 							+ ", index: " + monteCarloPoint.getIndex()
 							+ ", latlng: " + monteCarloPoint.getLatLng()
