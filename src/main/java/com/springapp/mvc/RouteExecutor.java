@@ -31,6 +31,8 @@ import com.maplink.framework.routing.vehiclerouting.montecarlo.factories.MonteCa
 import com.maplink.framework.routing.vehiclerouting.montecarlo.requests.MonteCarloDecisionRuleRequest;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.requests.MonteCarloRequest;
 import com.maplink.framework.routing.vehiclerouting.permutator.TransportableAnnealingPermutator;
+import com.maplink.framework.routing.vehiclerouting.permutator.factory.PermutatorFactory;
+import com.maplink.framework.routing.vehiclerouting.permutator.requests.PermutatorRequest;
 import com.maplink.framework.routing.vehiclerouting.timeableFunctions.ITimeCalculator;
 import com.maplink.framework.routing.vehiclerouting.timeableFunctions.Timeable;
 import com.maplink.framework.routing.vehiclerouting.timeableFunctions.factory.TimeCalculatorFactory;
@@ -169,49 +171,57 @@ public class RouteExecutor {
 		}	
 				
 		IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory.CreateObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
-		IMonteCarlo monteCarlo = MonteCarloFactory.CreateObject(new MonteCarloRequest(decisionRule, vehicleContainer, new TransportableAnnealingPermutator()));
-		
-		System.out.println("Start: " + GregorianCalendar.getInstance().getTime());
-		ITransporterContainer containerWithOptimisedStrategy = monteCarlo.run();
-		System.out.println("End: " + GregorianCalendar.getInstance().getTime());
-
-		StringBuilder csvString;
-		StringBuilder csvStringFinal = new StringBuilder();
-		count = 1;
-
-		for (ITimeableTransporter transporter : containerWithOptimisedStrategy){
-
-//			List<TimeableTransportableLatLng> monteCarloObjectToShow = (List<TimeableTransportableLatLng>)vehicleRoute;
-//			List<RouteStop> routesList = new ArrayList<RouteStop>();
-			csvString = new StringBuilder();
-			System.out.println("Trajetoria: " + count);
-			System.out.println("TrajetoriaEndDateTime: " + transporter.getCurrentDeliveryTime().getTime());
-
-			for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajetory()){
-				System.out.println("Id: " + monteCarloPoint.getId() 
-						+ ", index: " + monteCarloPoint.getIndex()
-						+ ", latlng: " + monteCarloPoint.getLatLng()
-						+ ", isEnd: " + monteCarloPoint.isEnd()
-						+ ", originalDateTime: " + monteCarloPoint.getTime().getDateTime().getTime()
-						+ ", arrivalDateTime: " + monteCarloPoint.getCurrentDeliveryTime().getTime());
+		IMonteCarlo monteCarlo = MonteCarloFactory.CreateObject(new MonteCarloRequest(decisionRule, vehicleContainer, PermutatorFactory.CreateObject(new PermutatorRequest())));
 				
-				StringBuilder csvPoints =  new StringBuilder();
-				if (csvString.length() == 0){
-					csvPoints.append("[").append(monteCarloPoint.getLatLng().getLng()).append(",").append(monteCarloPoint.getLatLng().getLat()).append("]");
+		try {
+			System.out.println("Start: " + GregorianCalendar.getInstance().getTime());
+			ITransporterContainer containerWithOptimisedStrategy = monteCarlo.run();		
+			System.out.println("End: " + GregorianCalendar.getInstance().getTime());
+	
+			StringBuilder csvString;
+			StringBuilder csvStringFinal = new StringBuilder();
+			count = 1;
+	
+			for (ITimeableTransporter transporter : containerWithOptimisedStrategy){
+	
+	//			List<TimeableTransportableLatLng> monteCarloObjectToShow = (List<TimeableTransportableLatLng>)vehicleRoute;
+	//			List<RouteStop> routesList = new ArrayList<RouteStop>();
+				csvString = new StringBuilder();
+				System.out.println("Trajetoria: " + count);
+				System.out.println("TrajetoriaEndDateTime: " + transporter.getCurrentDeliveryTime().getTime());
+	
+				for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajetory()){
+					System.out.println("Id: " + monteCarloPoint.getId() 
+							+ ", index: " + monteCarloPoint.getIndex()
+							+ ", latlng: " + monteCarloPoint.getLatLng()
+							+ ", isEnd: " + monteCarloPoint.isEnd()
+							+ ", originalDateTime: " + monteCarloPoint.getTime().getDateTime().getTime()
+							+ ", arrivalDateTime: " + monteCarloPoint.getCurrentDeliveryTime().getTime());
+					
+					StringBuilder csvPoints =  new StringBuilder();
+					if (csvString.length() == 0){
+						csvPoints.append("[").append(monteCarloPoint.getLatLng().getLng()).append(",").append(monteCarloPoint.getLatLng().getLat()).append("]");
+					}
+					else{
+						csvPoints.append(",\n[").append(monteCarloPoint.getLatLng().getLng()).append(",").append(monteCarloPoint.getLatLng().getLat()).append("]");
+					}
+					
+					csvString.append(csvPoints);
 				}
-				else{
-					csvPoints.append(",\n[").append(monteCarloPoint.getLatLng().getLng()).append(",").append(monteCarloPoint.getLatLng().getLat()).append("]");
-				}
-				
-				csvString.append(csvPoints);
+	
+				csvStringFinal.append("var latLongs").append(Integer.toString(count)).append(" = [").append(csvString).append("];\n").append("traceRoute(").append("latLongs").append(Integer.toString(count)).append(",get_random_color())\n\n");
+				count ++;
+	
 			}
-
-			csvStringFinal.append("var latLongs").append(Integer.toString(count)).append(" = [").append(csvString).append("];\n").append("traceRoute(").append("latLongs").append(Integer.toString(count)).append(",get_random_color())\n\n");
-			count ++;
-
+			
+			System.out.println("Caio: It's ended: Now we plot");
+			return csvStringFinal.toString();		
 		}
-		System.out.println("Caio: It's ended: Now we plot");
-		return csvStringFinal.toString();
-
+		catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		return null;
+		
 	}
 }

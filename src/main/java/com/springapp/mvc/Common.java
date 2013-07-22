@@ -175,14 +175,19 @@ public class Common {
 			LatLng origin = getRandomPoint();
 			if (!pointMap.containsKey(origin)){    
 
-				Tuple<LatLng, Period> destination = getDestinationWithPeriod(origin, 0, pointMap);
-
-				if (destination != null)
-				{
-					pointMap.put(origin, destination);        
+				try {
+					Tuple<LatLng, Period> destination = getDestinationWithPeriod(origin, 0, pointMap);
+	
+					if (destination != null)
+					{
+						pointMap.put(origin, destination);        
+					}
+					else {
+						pointMap.remove(origin); // se nao há destino com periodo apos o limite de ciclos, remove origem
+					}
 				}
-				else {
-					pointMap.remove(origin); // se nao há destino com periodo apos o limite de ciclos, remove origem
+				catch (Exception ex) {
+					ex.printStackTrace();  
 				}
 			}     
 		}      
@@ -208,18 +213,23 @@ public class Common {
 	}
 
 
-	static Tuple<LatLng, Period> getDestinationWithPeriod(LatLng origin, int cycle, Map<LatLng, Tuple<LatLng, Period>> pointMap) {
+	static Tuple<LatLng, Period> getDestinationWithPeriod(LatLng origin, int cycle, Map<LatLng, Tuple<LatLng, Period>> pointMap) throws Exception {
 		LatLng destination = getRandomPoint();        	
 		
 		while (pointMap.containsKey(destination)) {
 			destination = getRandomPoint(); 
 		}
 		
-		Period period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		if (period != null)
-		{
-			return new Tuple<LatLng, Period>(destination, period);        
+		try {
+			Period period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
+			if (period != null)
+			{
+				return new Tuple<LatLng, Period>(destination, period);        
+			}
 		}
+		 catch (Exception ex) {
+	        	throw (ex);
+	    }
 
 		// recursao nao maior que 5 ciclos
 		if (cycle > 5)
