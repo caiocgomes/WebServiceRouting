@@ -101,7 +101,7 @@ public class RouteExecutor {
 	public static String start(Integer quantityClients, Integer quantityBus,Integer busCapacity) throws Exception{
 		
 //		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
-		int totalPairPoints = 15 + 1; // pares de pontos dos clientes e par de pontos do onibus
+		int totalPairPoints = 13 + 1; // pares de pontos dos clientes e par de pontos do onibus
 		
 		// obtem uma lista de pares de pontos aleatorios com periodo entre eles
 		Map<LatLng, Tuple<LatLng, Period>> pointSet = Common.CreatePointsWithPeriod(totalPairPoints); 
