@@ -135,7 +135,7 @@
 //            //monteCarloObjectsStore.put(i,new SimplePerson(i + 0,(Point)pointObj));
 //            Calendar date = new GregorianCalendar(2015,1,1);
 //
-//            monteCarloObjectsStore.put(i, TransportableFactory.CreateObject(new TransportableRequest(i, new LatLng(pointObj.getY(), pointObj.getX()), 
+//            monteCarloObjectsStore.put(i, TransportableFactory.createObject(new TransportableRequest(i, new LatLng(pointObj.getY(), pointObj.getX()), 
 //            		new LatLng(pointObj.getY(), pointObj.getX()), TransportableType.Person)));
 //        }
 //

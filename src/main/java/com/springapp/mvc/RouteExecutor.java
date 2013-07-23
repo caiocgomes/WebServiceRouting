@@ -30,7 +30,6 @@ import com.maplink.framework.routing.vehiclerouting.montecarlo.factories.MonteCa
 import com.maplink.framework.routing.vehiclerouting.montecarlo.factories.MonteCarloFactory;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.requests.MonteCarloDecisionRuleRequest;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.requests.MonteCarloRequest;
-import com.maplink.framework.routing.vehiclerouting.permutator.TransportableAnnealingPermutator;
 import com.maplink.framework.routing.vehiclerouting.permutator.factory.PermutatorFactory;
 import com.maplink.framework.routing.vehiclerouting.permutator.requests.PermutatorRequest;
 import com.maplink.framework.routing.vehiclerouting.timeableFunctions.ITimeCalculator;
@@ -53,21 +52,23 @@ import com.maplink.framework.routing.vehiclerouting.types.TransportableType;
 @RequestMapping("/addContact")
 public class RouteExecutor {
 	@RequestMapping(method = RequestMethod.POST)
-	public String getRoutes(@ModelAttribute("SpringWeb") Route routeParam, ModelMap model) throws Exception{		  
+	public String getRoutes(@ModelAttribute("SpringWeb") Route routeParam,
+			ModelMap model) throws Exception {
 
-		if (routeParam.getQuantityBus()*routeParam.getBusCapacity() >= routeParam.getQuantityClients()){
-			String ans = start(routeParam.getQuantityClients(),routeParam.getQuantityBus(),routeParam.getBusCapacity());
-			model.addAttribute("route",ans);
+		if (routeParam.getQuantityBus() * routeParam.getBusCapacity() >= routeParam.getQuantityClients()) {
+			String ans = start(routeParam.getQuantityClients(), routeParam.getQuantityBus(), routeParam.getBusCapacity());
+			model.addAttribute("route", ans);
 			return "routes2";
-		}
-		else{
-			model.addAttribute("info","<emph>não é possivel realizar essa rota com o número de veiculos pedidos</emph>");
+		} else {
+			model.addAttribute(
+					"info",
+					"<emph>não é possivel realizar essa rota com o número de veiculos pedidos</emph>");
 			return "redirect:/";
 		}
 	}
-	
-	static Calendar getDate() {		
-	
+
+	static Calendar getDate() {
+
 		int hour = randBetween(9, 20);
 		int min = randBetween(0, 59);
 		int sec = randBetween(0, 59);
@@ -75,153 +76,197 @@ public class RouteExecutor {
 		Calendar dateNow = Calendar.getInstance();
 
 		// cria um horario para o dia seguinte
-		return new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1, dateNow.get(Calendar.DAY_OF_MONTH) + 1, 
-				hour, min, sec);
+		return new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+				dateNow.get(Calendar.DAY_OF_MONTH) + 1, hour, min, sec);
 	}
-
 
 	static int randBetween(int start, int end) {
-		return start + (int)Math.round(Math.random() * (end - start));
+		return start + (int) Math.round(Math.random() * (end - start));
 	}
-	
-	static ITimeableTransporter getNotFullVehicle(ITransporterContainer vehicleContainer, int quantityBus) {		
+
+	static ITimeableTransporter getNotFullVehicle(
+			ITransporterContainer vehicleContainer, int quantityBus) {
 		Random randomGenerator = new Random();
-		
+
 		ITimeableTransporter vehicle = vehicleContainer.get(randomGenerator.nextInt(quantityBus));
 
 		if (!vehicle.isFull()) {
 			return vehicle;
 		}
-		
+
 		getNotFullVehicle(vehicleContainer, quantityBus);
-		
+
 		return null;
 	}
 
-	public static String start(Integer quantityClients, Integer quantityBus,Integer busCapacity) throws Exception{
-		
-//		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
-		int totalPairPoints = 13 + 1; // pares de pontos dos clientes e par de pontos do onibus
-		
+	public static String start(Integer quantityClients, Integer quantityBus,
+			Integer busCapacity) throws Exception {
+
+		// int totalPairPoints = quantityClients + 1; // pares de pontos dos
+		// clientes e par de pontos do onibus
+		int totalPairPoints = 18 + 1; // pares de pontos dos clientes e par de
+		// pontos do onibus
+
 		// obtem uma lista de pares de pontos aleatorios com periodo entre eles
-		Map<LatLng, Tuple<LatLng, Period>> pointSet = Common.CreatePointsWithPeriod(totalPairPoints); 
-		
+		Map<LatLng, Tuple<LatLng, Period>> pointSet = Common.CreatePointsWithPeriod(totalPairPoints);
+
 		Set<LatLng> setTest = new HashSet<LatLng>();
 		for (LatLng point : pointSet.keySet()) {
 			if (setTest.contains(point)) {
-				System.out.println("1: " + point + ", 2: " + pointSet.get(point).getItem1() + ", period: " + pointSet.get(point).getItem2());
-			}
-			else {
+				System.out.println("1: " + point + ", 2: "
+						+ pointSet.get(point).getItem1() + ", period: "
+						+ pointSet.get(point).getItem2());
+			} else {
 				setTest.add(point);
 			}
-//			System.out.println("1: " + point + ", 2: " + pointSet.get(point).getItem1() + ", period: " + pointSet.get(point).getItem2());
+			// System.out.println("1: " + point + ", 2: " +
+			// pointSet.get(point).getItem1() + ", period: " +
+			// pointSet.get(point).getItem2());
 		}
 
 		// Map de clientes
-		Map<Integer, ITimeableTransportable> idClient_Client = new HashMap<Integer,ITimeableTransportable>();
-		
+		Map<Integer, ITimeableTransportable> idClient_Client = new HashMap<Integer, ITimeableTransportable>();
+
 		int count = 1;
-		Period tolerance = new Period(0, 15, 0, 0); // tolerancia para startPoint e endPoint
+		Period tolerance = new Period(0, 15, 0, 0); // tolerancia para
+		// startPoint e endPoint
 		Calendar dateNow = Calendar.getInstance();
-		Calendar busStartDate = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1, dateNow.get(Calendar.DAY_OF_MONTH) + 1, 8, 30, 0);
-		Calendar busEndDate = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1, dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 30, 0);
+		Calendar busStartDate = new GregorianCalendar(2013,
+				dateNow.get(Calendar.MONTH) + 1,
+				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 8, 30, 0);
+		Calendar busEndDate = new GregorianCalendar(2013,
+				dateNow.get(Calendar.MONTH) + 1,
+				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 30, 0);
 		LatLng busStartPoint = null;
 		LatLng busEndPoint = null;
-		
+
 		// insere pontos de clientes
-		for (LatLng point: pointSet.keySet()){		
-			
+		for (LatLng point : pointSet.keySet()) {
+
 			// � feio, mas � apenas para testes
-			if (count >= totalPairPoints)
-			{
+			if (count >= totalPairPoints) {
 				busStartPoint = point;
 				busEndPoint = pointSet.get(point).getItem1();
 				break;
-			}			
+			}
 
 			Calendar startDate = getDate();
 			Calendar endDate = new GregorianCalendar();
-			endDate.setTimeInMillis(startDate.getTimeInMillis() + pointSet.get(point).getItem2().toStandardDuration().getMillis());		
-			
-			idClient_Client.put(count, (ITimeableTransportable)TransportableFactory.CreateObject(new TimeableTransportableRequest(count, TransportableType.Person, 
-					new TimeableTransportableLatLng(count, point, new Timeable(startDate, tolerance), false), 
-					new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, tolerance), true))));	
-			
-			count++;	
+			endDate.setTimeInMillis(startDate.getTimeInMillis()
+					+ pointSet.get(point).getItem2().toStandardDuration()
+					.getMillis());
+
+			idClient_Client.put(count,
+					(ITimeableTransportable) TransportableFactory
+					.createObject(new TimeableTransportableRequest(count,
+							TransportableType.Person, new TimeableTransportableLatLng(count, point, new Timeable(startDate, tolerance), false),
+							new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, tolerance), true))));
+
+			count++;
 		}
-		
-		IDistanceCalculator calculator = DistanceCalculatorFactory.CreateObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-		ICostCalculator costCalculator = CostCalculatorFactory.CreateObject(new CostCalculatorRequest(calculator));	
-		ITransporterContainer vehicleContainer = (ITransporterContainer)TransporterContainerFactory.CreateObject(new TransporterContainerRequest(costCalculator)); 
-		
-		ITimeCalculator timeCalculator = TimeCalculatorFactory.CreateObject(new TimeCalculatorRequest(DistanceType.Real, true));
-		
+
+		IDistanceCalculator calculator = DistanceCalculatorFactory
+.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
+		ICostCalculator costCalculator = CostCalculatorFactory
+				.createObject(new CostCalculatorRequest(calculator));
+		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
+				.createObject(new TransporterContainerRequest(costCalculator));
+
+		ITimeCalculator timeCalculator = TimeCalculatorFactory
+				.createObject(new TimeCalculatorRequest(DistanceType.Real, true));
+
 		// adiciona veiculos no container
-		for (int i = 0 ; i < quantityBus ; i++){			
-			vehicleContainer.add((ITimeableTransporter)TransporterFactory.CreateObject(new TimeableTransporterRequest(new Timeable(busStartDate, tolerance), 
-					new Timeable(busEndDate, tolerance), busStartPoint, busEndPoint, timeCalculator)));
+		for (int i = 0; i < quantityBus; i++) {
+			vehicleContainer.add((ITimeableTransporter) TransporterFactory
+.createObject(new TimeableTransporterRequest(new Timeable(busStartDate,
+							tolerance), new Timeable(busEndDate, tolerance), busStartPoint, busEndPoint, timeCalculator)));
 		}
-		
-		ITimeableTransporter vehicle;		
+
+		ITimeableTransporter vehicle;
 		// distribui os pontos nos diversos onibus do container
-		for (int id: idClient_Client.keySet()){
-			
-			vehicle = getNotFullVehicle(vehicleContainer, quantityBus);			
-			vehicle.put(id, idClient_Client.get(id));			
-		}	
-				
-		IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory.CreateObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
-		IMonteCarlo monteCarlo = MonteCarloFactory.CreateObject(new MonteCarloRequest(decisionRule, vehicleContainer, PermutatorFactory.CreateObject(new PermutatorRequest())));
-				
+		for (int id : idClient_Client.keySet()) {
+
+			vehicle = getNotFullVehicle(vehicleContainer, quantityBus);
+			vehicle.put(id, idClient_Client.get(id));
+		}
+
+		IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory
+				.createObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
+		IMonteCarlo monteCarlo = MonteCarloFactory
+.createObject(new MonteCarloRequest(decisionRule, vehicleContainer,
+						PermutatorFactory.createObject(new PermutatorRequest())));
+
 		try {
-			System.out.println("Start: " + GregorianCalendar.getInstance().getTime());
-			ITransporterContainer containerWithOptimisedStrategy = monteCarlo.run();		
-			System.out.println("End: " + GregorianCalendar.getInstance().getTime());
-	
+			System.out.println("Start: "
+					+ GregorianCalendar.getInstance().getTime());
+			ITransporterContainer containerWithOptimisedStrategy = monteCarlo.run();
+			System.out.println("End: "
+					+ GregorianCalendar.getInstance().getTime());
+
 			StringBuilder csvString;
 			StringBuilder csvStringFinal = new StringBuilder();
 			count = 1;
-	
-			for (ITimeableTransporter transporter : containerWithOptimisedStrategy){
-	
-	//			List<TimeableTransportableLatLng> monteCarloObjectToShow = (List<TimeableTransportableLatLng>)vehicleRoute;
-	//			List<RouteStop> routesList = new ArrayList<RouteStop>();
+
+			for (ITimeableTransporter transporter : containerWithOptimisedStrategy) {
+
+				// List<TimeableTransportableLatLng> monteCarloObjectToShow =
+				// (List<TimeableTransportableLatLng>)vehicleRoute;
+				// List<RouteStop> routesList = new ArrayList<RouteStop>();
 				csvString = new StringBuilder();
 				System.out.println("Trajetoria: " + count);
-				System.out.println("TrajetoriaEndDateTime: " + transporter.getCurrentDeliveryTime().getTime());
-	
-				for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajectory()){
-					System.out.println("Id: " + monteCarloPoint.getId() 
-							+ ", index: " + monteCarloPoint.getIndex()
-							+ ", latlng: " + monteCarloPoint.getLatLng()
-							+ ", isEnd: " + monteCarloPoint.isEnd()
-							+ ", originalDateTime: " + monteCarloPoint.getTime().getDateTime().getTime()
-							+ ", arrivalDateTime: " + monteCarloPoint.getCurrentDeliveryTime().getTime());
-					
-					StringBuilder csvPoints =  new StringBuilder();
-					if (csvString.length() == 0){
-						csvPoints.append("[").append(monteCarloPoint.getLatLng().getLng()).append(",").append(monteCarloPoint.getLatLng().getLat()).append("]");
+				System.out.println("TrajetoriaEndDateTime: "
+						+ transporter.getCurrentDeliveryTime().getTime());
+
+				for (TimeableTransportableLatLng monteCarloPoint : transporter
+						.getTrajectory()) {
+					System.out.println("Id: "
+							+ monteCarloPoint.getId()
+							+ ", index: "
+							+ monteCarloPoint.getIndex()
+							+ ", latlng: "
+							+ monteCarloPoint.getLatLng()
+							+ ", isEnd: "
+							+ monteCarloPoint.isEnd()
+							+ ", originalDateTime: "
+							+ monteCarloPoint.getTime().getDateTime().getTime()
+							+ ", arrivalDateTime: "
+							+ monteCarloPoint.getCurrentDeliveryTime()
+							.getTime());
+
+					StringBuilder csvPoints = new StringBuilder();
+					if (csvString.length() == 0) {
+						csvPoints.append("[")
+						.append(monteCarloPoint.getLatLng().getLng())
+						.append(",")
+						.append(monteCarloPoint.getLatLng().getLat())
+						.append("]");
+					} else {
+						csvPoints.append(",\n[")
+						.append(monteCarloPoint.getLatLng().getLng())
+						.append(",")
+						.append(monteCarloPoint.getLatLng().getLat())
+						.append("]");
 					}
-					else{
-						csvPoints.append(",\n[").append(monteCarloPoint.getLatLng().getLng()).append(",").append(monteCarloPoint.getLatLng().getLat()).append("]");
-					}
-					
+
 					csvString.append(csvPoints);
 				}
-	
-				csvStringFinal.append("var latLongs").append(Integer.toString(count)).append(" = [").append(csvString).append("];\n").append("traceRoute(").append("latLongs").append(Integer.toString(count)).append(",get_random_color())\n\n");
-				count ++;
-	
+
+				csvStringFinal.append("var latLongs")
+				.append(Integer.toString(count)).append(" = [")
+				.append(csvString).append("];\n").append("traceRoute(")
+				.append("latLongs").append(Integer.toString(count))
+				.append(",get_random_color())\n\n");
+				count++;
+
 			}
-			
+
 			System.out.println("Caio: It's ended: Now we plot");
-			return csvStringFinal.toString();		
-		}
-		catch (Exception ex) {
+			return csvStringFinal.toString();
+		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		
+
 		return null;
-		
+
 	}
 }
