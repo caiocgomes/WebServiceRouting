@@ -4,12 +4,12 @@ public class Main {
 
 	/**
 	 * @param args
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 
-		RouteExecutor.start(50, 3, 30);
+		RouteExecutor.start(50, 4, 30);
 	}
 
 }

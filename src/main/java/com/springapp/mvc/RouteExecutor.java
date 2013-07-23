@@ -102,10 +102,8 @@ public class RouteExecutor {
 	public static String start(Integer quantityClients, Integer quantityBus,
 			Integer busCapacity) throws Exception {
 
-		// int totalPairPoints = quantityClients + 1; // pares de pontos dos
-		// clientes e par de pontos do onibus
-		int totalPairPoints = 18 + 1; // pares de pontos dos clientes e par de
-		// pontos do onibus
+		// int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
+		int totalPairPoints = 35 + 1; // pares de pontos dos clientes e par de pontos do onibus
 
 		// obtem uma lista de pares de pontos aleatorios com periodo entre eles
 		Map<LatLng, Tuple<LatLng, Period>> pointSet = Common.CreatePointsWithPeriod(totalPairPoints);
@@ -165,21 +163,17 @@ public class RouteExecutor {
 			count++;
 		}
 
-		IDistanceCalculator calculator = DistanceCalculatorFactory
-.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-		ICostCalculator costCalculator = CostCalculatorFactory
-				.createObject(new CostCalculatorRequest(calculator));
-		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
-				.createObject(new TransporterContainerRequest(costCalculator));
+		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
+		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator));
+		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory.createObject(new TransporterContainerRequest(
+				costCalculator));
 
-		ITimeCalculator timeCalculator = TimeCalculatorFactory
-				.createObject(new TimeCalculatorRequest(DistanceType.Real, true));
+		ITimeCalculator timeCalculator = TimeCalculatorFactory.createObject(new TimeCalculatorRequest(DistanceType.Real, true));
 
 		// adiciona veiculos no container
 		for (int i = 0; i < quantityBus; i++) {
-			vehicleContainer.add((ITimeableTransporter) TransporterFactory
-.createObject(new TimeableTransporterRequest(new Timeable(busStartDate,
-							tolerance), new Timeable(busEndDate, tolerance), busStartPoint, busEndPoint, timeCalculator)));
+			vehicleContainer.add((ITimeableTransporter) TransporterFactory.createObject(new TimeableTransporterRequest(new Timeable(busStartDate,
+					tolerance), new Timeable(busEndDate, tolerance), busStartPoint, busEndPoint, timeCalculator)));
 		}
 
 		ITimeableTransporter vehicle;
@@ -190,18 +184,14 @@ public class RouteExecutor {
 			vehicle.put(id, idClient_Client.get(id));
 		}
 
-		IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory
-				.createObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
-		IMonteCarlo monteCarlo = MonteCarloFactory
-.createObject(new MonteCarloRequest(decisionRule, vehicleContainer,
-						PermutatorFactory.createObject(new PermutatorRequest())));
+		IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory.createObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
+		IMonteCarlo monteCarlo = MonteCarloFactory.createObject(new MonteCarloRequest(decisionRule, vehicleContainer,
+				PermutatorFactory.createObject(new PermutatorRequest())));
 
 		try {
-			System.out.println("Start: "
-					+ GregorianCalendar.getInstance().getTime());
+			System.out.println("Start: " + GregorianCalendar.getInstance().getTime());
 			ITransporterContainer containerWithOptimisedStrategy = monteCarlo.run();
-			System.out.println("End: "
-					+ GregorianCalendar.getInstance().getTime());
+			System.out.println("End: " + GregorianCalendar.getInstance().getTime());
 
 			StringBuilder csvString;
 			StringBuilder csvStringFinal = new StringBuilder();
@@ -209,9 +199,6 @@ public class RouteExecutor {
 
 			for (ITimeableTransporter transporter : containerWithOptimisedStrategy) {
 
-				// List<TimeableTransportableLatLng> monteCarloObjectToShow =
-				// (List<TimeableTransportableLatLng>)vehicleRoute;
-				// List<RouteStop> routesList = new ArrayList<RouteStop>();
 				csvString = new StringBuilder();
 				System.out.println("Trajetoria: " + count);
 				System.out.println("TrajetoriaEndDateTime: "
