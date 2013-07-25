@@ -1,5 +1,6 @@
 package com.springapp.mvc;
 
+
 public class Main {
 
 	/**
@@ -9,7 +10,7 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 
-		RouteExecutor.start(50, 4, 30);
+		RouteExecutor.start(50, 5, 30);
 	}
 
 }

@@ -1,37 +1,21 @@
 package com.springapp.mvc;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.joda.time.Period;
+
 import com.maplink.framework.routing.vehiclerouting.classes.Tuple;
 import com.maplink.framework.routing.vehiclerouting.location.LatLng;
 import com.maplink.framework.routing.vehiclerouting.webservice.ServiceGetter;
 import com.maplink.framework.routing.vehiclerouting.webservice.route.Point;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteDetails;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteInfo;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteLocator;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteOptions;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteStop;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteSummary;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.RouteTotals;
-import com.maplink.framework.routing.vehiclerouting.webservice.route.Vehicle;
-
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.xml.rpc.ServiceException;
-
-import org.joda.time.Period;
-import org.joda.time.format.ISOPeriodFormat;
-import org.joda.time.format.PeriodFormatter;
 
 
 /**
@@ -110,20 +94,20 @@ public class Common {
 		}
 
 		// oq Ã© o double?
-				Map<Point,Map<Point,Double>> mapPoint = new HashMap<Point,Map<Point,Double>>();
+		Map<Point,Map<Point,Double>> mapPoint = new HashMap<Point,Map<Point,Double>>();
 
-				for (Point point1 : pointList){
-					for (Point point2 : pointList){
-						if (mapPoint.containsKey(point1)){
-							mapPoint.get(point1).put(point2,0.0);
-						} else{
-							mapPoint.put(point1, new HashMap<Point, Double>());
-							mapPoint.get(point1).put(point2,0.0);
-						}
-					}
-
+		for (Point point1 : pointList){
+			for (Point point2 : pointList){
+				if (mapPoint.containsKey(point1)){
+					mapPoint.get(point1).put(point2,0.0);
+				} else{
+					mapPoint.put(point1, new HashMap<Point, Double>());
+					mapPoint.get(point1).put(point2,0.0);
 				}
-				return mapPoint;
+			}
+
+		}
+		return mapPoint;
 	}
 
 	public static Map<LatLng, LatLng> CreatePoints(Integer quantityPairs){
@@ -132,11 +116,11 @@ public class Common {
 		while (pointMap.size() < quantityPairs){
 
 			LatLng point = new LatLng(-23.54839 + .09 * (Math.random() * 2 - 1), -46.64035 + .09 * (Math.random() * 2 - 1));
-			if (!pointMap.containsKey(point)){    
+			if (!pointMap.containsKey(point)){
 				LatLng point2 = new LatLng(-23.54839 + .09 * (Math.random() * 2 - 1), -46.64035 + .09 * (Math.random() * 2 - 1));
-				pointMap.put(point, point2);            	
-			}     
-		}        
+				pointMap.put(point, point2);
+			}
+		}
 
 		return pointMap;
 	}
@@ -150,51 +134,54 @@ public class Common {
 
 			// FileInputStream fileIn =
 			//        new FileInputStream("distanceDict.ttt");
-			
-//			InputStream in = Common.class.getClassLoader().getResourceAsStream("/distanceWithPeriod.ttt");
-//			InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("/distanceWithPeriod.ttt");
-			
+
+			//			InputStream in = Common.class.getClassLoader().getResourceAsStream("/distanceWithPeriod.ttt");
+			//			InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("/distanceWithPeriod.ttt");
+
 			FileInputStream in = new FileInputStream("C:/Users/su.yinhe/logistica/webservice/distanceWithPeriod.ttt");
 			if (in != null) {
-				ObjectInputStream objectInputStream = new ObjectInputStream(in);	
+				ObjectInputStream objectInputStream = new ObjectInputStream(in);
 				pointMap =  (Map<LatLng, Tuple<LatLng, Period>>) objectInputStream.readObject();
 				objectInputStream.close();
-				in.close();	
-				return pointMap;
-			}		
+				in.close();
+
+				if (pointMap.size() >= quantityPairs) {
+					return pointMap;
+				}
+			}
 			in.close();
 		} catch (IOException e) {
-			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.         
-		} catch (ClassNotFoundException e) { 
-			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.         
-		}     
+			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+		}
 
 
 		while (pointMap.size() < quantityPairs){
 
 			LatLng origin = getRandomPoint();
-			if (!pointMap.containsKey(origin)){    
+			if (!pointMap.containsKey(origin)){
 
 				try {
 					Tuple<LatLng, Period> destination = getDestinationWithPeriod(origin, 0, pointMap);
-	
+
 					if (destination != null)
 					{
-						pointMap.put(origin, destination);        
+						pointMap.put(origin, destination);
 					}
 					else {
 						pointMap.remove(origin); // se nao há destino com periodo apos o limite de ciclos, remove origem
 					}
 				}
 				catch (Exception ex) {
-					ex.printStackTrace();  
+					ex.printStackTrace();
 				}
-			}     
-		}      
+			}
+		}
 
 		try
 		{
-			FileOutputStream fileOut = new FileOutputStream("distanceWithPeriod.ttt");       
+			FileOutputStream fileOut = new FileOutputStream("distanceWithPeriod.ttt");
 			ObjectOutputStream out = new ObjectOutputStream(fileOut);
 			out.writeObject(pointMap);
 			out.close();
@@ -203,7 +190,7 @@ public class Common {
 		catch(IOException i)
 		{
 			i.printStackTrace();
-		}        
+		}
 
 		return pointMap;
 	}
@@ -214,22 +201,22 @@ public class Common {
 
 
 	static Tuple<LatLng, Period> getDestinationWithPeriod(LatLng origin, int cycle, Map<LatLng, Tuple<LatLng, Period>> pointMap) throws Exception {
-		LatLng destination = getRandomPoint();        	
-		
+		LatLng destination = getRandomPoint();
+
 		while (pointMap.containsKey(destination)) {
-			destination = getRandomPoint(); 
+			destination = getRandomPoint();
 		}
-		
+
 		try {
 			Period period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
 			if (period != null)
 			{
-				return new Tuple<LatLng, Period>(destination, period);        
+				return new Tuple<LatLng, Period>(destination, period);
 			}
 		}
-		 catch (Exception ex) {
-	        	throw (ex);
-	    }
+		catch (Exception ex) {
+			throw (ex);
+		}
 
 		// recursao nao maior que 5 ciclos
 		if (cycle > 5)
@@ -240,14 +227,14 @@ public class Common {
 		// recursao
 		getDestinationWithPeriod(origin, ++cycle, pointMap);
 
-		return null;    
+		return null;
 	}
 
 	//    static RouteTotals getRouteTotalsFromServiceRoute(LatLng startPoint, LatLng endPoint) {
 	//        final String TOKEN = "yxVibnSHz09lxCOibnSLdwSiNXuiNXNiNJUkNIUkPGoANXomPU==";
 	//
 	//        Point destinationPoint = new Point(endPoint.getLng(), endPoint.getLat());
-	//        Point originPoint = new Point(startPoint.getLng(), startPoint.getLat());       
+	//        Point originPoint = new Point(startPoint.getLng(), startPoint.getLat());
 	//
 	//        RouteStop[] routeStops = new RouteStop[] { new RouteStop(originPoint.toString(), originPoint), new RouteStop(destinationPoint.toString(), destinationPoint) };
 	//
@@ -267,7 +254,7 @@ public class Common {
 	//        routeOptions.setLanguage("portugues");
 	//        routeOptions.setRouteDetails(routeDetails);
 	//        routeOptions.setVehicle(vehicle);
-	//        
+	//
 	//        RouteTotals routeResponse = null;
 	//
 	//        try {
@@ -280,29 +267,29 @@ public class Common {
 	//
 	//        return routeResponse;
 	//    }
-	//    
+	//
 	//    public static Double getRouteDistanceFromServiceRoute(LatLng startPoint, LatLng endPoint) {
-	//       
+	//
 	//    	RouteTotals routeResponse = getRouteTotalsFromServiceRoute(startPoint, endPoint);
-	//    	
+	//
 	//    	if (routeResponse != null)
 	//    	{
 	//    		return routeResponse.getTotalDistance();
 	//    	}
-	//    	
+	//
 	//    	return null;
 	//    }
-	//    
-	//    public static Period getRouteTimeFromServiceRoute(LatLng startPoint, LatLng endPoint) {     
-	//    	
+	//
+	//    public static Period getRouteTimeFromServiceRoute(LatLng startPoint, LatLng endPoint) {
+	//
 	//    	RouteTotals routeResponse = getRouteTotalsFromServiceRoute(startPoint, endPoint);
-	//    	
+	//
 	//    	if (routeResponse != null)
 	//    	{
-	//    		PeriodFormatter formatter = ISOPeriodFormat.standard();      
-	//    		return formatter.parsePeriod(routeResponse.getTotalTime()); 
+	//    		PeriodFormatter formatter = ISOPeriodFormat.standard();
+	//    		return formatter.parsePeriod(routeResponse.getTotalTime());
 	//    	}
-	//    	
+	//
 	//    	return null;
 	//    }
 
