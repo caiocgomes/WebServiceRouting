@@ -10,7 +10,7 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 
-		RouteExecutor.start(50, 5, 30);
+		RouteExecutor2.start(50, 5, 30);
 	}
 
 }

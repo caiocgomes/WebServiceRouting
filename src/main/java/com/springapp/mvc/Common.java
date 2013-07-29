@@ -126,6 +126,155 @@ public class Common {
 	}
 
 	@SuppressWarnings("unused")
+	public static Tuple<LatLng, Map<LatLng, Period>> CreatePointsWithPeriodDeliveryBusinessFromEXisting(Integer quantityPoints) throws Exception {
+
+		Map<LatLng, Period> pointMap = new HashMap<LatLng, Period>();
+
+		Tuple<LatLng, Map<LatLng, Period>> tuple = null;
+//
+//		try {
+//
+//			FileInputStream in = new FileInputStream("C:/Users/su.yinhe/logistica/webservice/distanceWithPeriodDeliveryBusiness.ttt");
+//			if (in != null) {
+//				ObjectInputStream objectInputStream = new ObjectInputStream(in);
+//				tuple = (Tuple<LatLng, Map<LatLng, Period>>) objectInputStream.readObject();
+//				objectInputStream.close();
+//				in.close();
+//
+//				if (tuple.getItem2().size() >= quantityPoints) {
+//					return tuple;
+//				}
+//			}
+//			in.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+//		} catch (ClassNotFoundException e) {
+//			e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+//		}
+
+		Map<LatLng, Tuple<LatLng, Period>> map = CreatePointsWithPeriod(51);
+
+		int count = 0;
+		LatLng origin = null;
+		for (LatLng point : map.keySet()) {
+
+			if (count > 0) {
+
+				try {
+					Period period = ServiceGetter.getRouteTimeFromServiceRoute(origin, point);
+					if (period != null)
+					{
+						pointMap.put(point, period);
+					}
+
+					period = ServiceGetter.getRouteTimeFromServiceRoute(origin, map.get(point).getItem1());
+					if (period != null)
+					{
+						pointMap.put(map.get(point).getItem1(), period);
+					}
+
+				} catch (Exception ex) {
+					throw (ex);
+				}
+			}
+			else {
+				if (tuple == null) {
+					origin = point;
+				}
+				else {
+					origin = tuple.getItem1();
+					pointMap = tuple.getItem2();
+				}
+			}
+
+			count++;
+		}
+
+		tuple = new Tuple<LatLng, Map<LatLng, Period>>(origin, pointMap);
+
+		try
+		{
+			FileOutputStream fileOut = new FileOutputStream("distanceWithPeriodDeliveryBusiness.ttt");
+			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+			out.writeObject(tuple);
+			out.close();
+			fileOut.close();
+		} catch (IOException i)
+		{
+			i.printStackTrace();
+		}
+
+		return tuple;
+	}
+
+	@SuppressWarnings("unused")
+	public static Tuple<LatLng, Map<LatLng, Period>> CreatePointsWithPeriodDeliveryBusiness(Integer quantityPoints) throws Exception {
+
+		Map<LatLng, Period> pointMap = new HashMap<LatLng, Period>();
+
+		Tuple<LatLng, Map<LatLng, Period>> tuple = null;
+
+		try {
+
+			FileInputStream in = new FileInputStream("C:/Users/su.yinhe/logistica/webservice/distanceWithPeriodDeliveryBusiness.ttt");
+			if (in != null) {
+				ObjectInputStream objectInputStream = new ObjectInputStream(in);
+				tuple = (Tuple<LatLng, Map<LatLng, Period>>) objectInputStream.readObject();
+				objectInputStream.close();
+				in.close();
+
+				if (tuple.getItem2().size() >= quantityPoints) {
+					return tuple;
+				}
+			}
+			in.close();
+		} catch (IOException e) {
+			e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+		}
+
+		LatLng origin;
+		if (tuple == null) {
+			origin = getRandomPoint();
+		}
+		else {
+			origin = tuple.getItem1();
+			pointMap = tuple.getItem2();
+		}
+
+		while (pointMap.size() < quantityPoints) {
+
+			try {
+				Tuple<LatLng, Period> destination = getDestinationWithPeriodDeliveryBusiness(origin, 0, pointMap);
+
+				if (destination != null)
+				{
+					pointMap.put(destination.getItem1(), destination.getItem2());
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+
+		tuple = new Tuple<LatLng, Map<LatLng, Period>>(origin, pointMap);
+
+		try
+		{
+			FileOutputStream fileOut = new FileOutputStream("distanceWithPeriodDeliveryBusiness.ttt");
+			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+			out.writeObject(tuple);
+			out.close();
+			fileOut.close();
+		} catch (IOException i)
+		{
+			i.printStackTrace();
+		}
+
+		return tuple;
+	}
+
+	@SuppressWarnings("unused")
 	public static Map<LatLng, Tuple<LatLng, Period>> CreatePointsWithPeriod(Integer quantityPairs){
 
 		Map<LatLng, Tuple<LatLng, Period>> pointMap = new HashMap<LatLng, Tuple<LatLng, Period>>();
@@ -225,9 +374,34 @@ public class Common {
 		}
 
 		// recursao
-		getDestinationWithPeriod(origin, ++cycle, pointMap);
+		return getDestinationWithPeriod(origin, ++cycle, pointMap);
+	}
 
-		return null;
+	static Tuple<LatLng, Period> getDestinationWithPeriodDeliveryBusiness(LatLng origin, int cycle, Map<LatLng, Period> pointMap) throws Exception {
+		LatLng destination = getRandomPoint();
+
+		while (pointMap.containsKey(destination)) {
+			destination = getRandomPoint();
+		}
+
+		try {
+			Period period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
+			if (period != null)
+			{
+				return new Tuple<LatLng, Period>(destination, period);
+			}
+		} catch (Exception ex) {
+			throw (ex);
+		}
+
+		// recursao nao maior que 5 ciclos
+		if (cycle > 5)
+		{
+			return null;
+		}
+
+		// recursao
+		return getDestinationWithPeriodDeliveryBusiness(origin, ++cycle, pointMap);
 	}
 
 	//    static RouteTotals getRouteTotalsFromServiceRoute(LatLng startPoint, LatLng endPoint) {

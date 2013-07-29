@@ -52,7 +52,7 @@ import com.maplink.framework.routing.vehiclerouting.types.TransportableType;
 
 @Controller
 @RequestMapping("/addContact")
-public class RouteExecutor {
+public class RouteExecutor2 {
 	@RequestMapping(method = RequestMethod.POST)
 	public String getRoutes(@ModelAttribute("SpringWeb") Route routeParam,
 			ModelMap model) throws Exception {
@@ -87,23 +87,37 @@ public class RouteExecutor {
 	}
 
 	static ITimeableTransporter getNotFullVehicle(
-			ITransporterContainer vehicleContainer, int quantityBus, int cycle) {
+			ITransporterContainer vehicleContainer, int quantityBus, double weight, int cycle) {
 		Random randomGenerator = new Random();
 
 		ITimeableTransporter vehicle = vehicleContainer.get(randomGenerator.nextInt(quantityBus));
 
-		if (!vehicle.isFull()) {
+		// qdo é caminhao, deve-se verificar o limite de peso antes da inserção
+		if (vehicle instanceof ITruck) {
+			if (((ITruck) vehicle).getCurrentWeight() + weight < ((ITruck) vehicle).getMaximumWeight()) {
+				return vehicle;
+			}
+		}
+
+		else if (!vehicle.isFull()) {
 			return vehicle;
 		}
 
 		if (cycle < 10) {
-			return getNotFullVehicle(vehicleContainer, quantityBus, ++cycle);
+			return getNotFullVehicle(vehicleContainer, quantityBus, weight, ++cycle);
 		}
 
 		for (int i = 0; i < quantityBus; i++) {
 			vehicle = vehicleContainer.get(i);
 
-			if (!vehicle.isFull()) {
+			// qdo é caminhao, deve-se verificar o limite de peso antes da inserção
+			if (vehicle instanceof ITruck) {
+				if (((ITruck) vehicle).getCurrentWeight() + weight < ((ITruck) vehicle).getMaximumWeight()) {
+					return vehicle;
+				}
+			}
+
+			else if (!vehicle.isFull()) {
 				return vehicle;
 			}
 		}
@@ -193,11 +207,11 @@ public class RouteExecutor {
 
 	static void changeDeliveryBusinessClientsAndContainer(ITransporterContainer vehicleContainer,
 			Map<Integer, ITimeableTransportable> idClient_Client,
-			int totalPairPoints, int quantityBus)
+			int totalPoints, int quantityBus)
 					throws Exception {
 
 		// obtem uma origem com uma lista de pontos aleatorios com periodo entre eles
-		Tuple<LatLng, Map<LatLng, Period>> pointSet = Common.CreatePointsWithPeriodDeliveryBusiness(100);
+		Tuple<LatLng, Map<LatLng, Period>> pointSet = Common.CreatePointsWithPeriodDeliveryBusiness(totalPoints);
 
 		int count = 1;
 //		Period twoT; // 2T+30min
@@ -220,6 +234,11 @@ public class RouteExecutor {
 
 		// insere pontos de clientes
 		for (LatLng point : pointSet.getItem2().keySet()) {
+
+			// é feio, mas é apenas para testes
+			if (count >= totalPoints) {
+				break;
+			}
 
 //			Calendar startDate = busStartDate;
 			Calendar endDate = getDate();
@@ -261,7 +280,7 @@ public class RouteExecutor {
 	public static String start(Integer quantityClients, Integer quantityBus,
 			Integer busCapacity) throws Exception {
 
-		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
+//		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
 //		int totalPairPoints = 40 + 1; // pares de pontos dos clientes e par de pontos do onibus
 
 		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
@@ -273,24 +292,16 @@ public class RouteExecutor {
 		Map<Integer, ITimeableTransportable> idClient_Client = new HashMap<Integer, ITimeableTransportable>();
 
 //		changeSPTransClientsAndContainer(vehicleContainer, idClient_Client, totalPairPoints, quantityBus);
-		changeDeliveryBusinessClientsAndContainer(vehicleContainer, idClient_Client, totalPairPoints, quantityBus);
+		changeDeliveryBusinessClientsAndContainer(vehicleContainer, idClient_Client, 90, quantityBus);
 
 		ITimeableTransporter vehicle;
 		// distribui os pontos nos diversos onibus do container
 		for (int id : idClient_Client.keySet()) {
 
-			vehicle = getNotFullVehicle(vehicleContainer, quantityBus, 0);
+			vehicle = getNotFullVehicle(vehicleContainer, quantityBus, ((ITimeableStock) idClient_Client.get(id)).getWeight(), 0);
 
 			if (vehicle != null) {
-				if (vehicle instanceof ITruck) {
-					// qdo é caminhao, deve-se verificar o limite de peso antes da inserção
-					if (((ITruck) vehicle).getCurrentWeight() + ((ITimeableStock) idClient_Client.get(id)).getWeight() < ((ITruck) vehicle).getMaximumWeight()) {
-						vehicle.put(id, idClient_Client.get(id));
-					}
-				}
-				else {
-					vehicle.put(id, idClient_Client.get(id));
-				}
+				vehicle.put(id, idClient_Client.get(id));
 			}
 		}
 
