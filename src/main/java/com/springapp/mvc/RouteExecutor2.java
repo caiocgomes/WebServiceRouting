@@ -298,7 +298,12 @@ public class RouteExecutor2 {
 		// distribui os pontos nos diversos onibus do container
 		for (int id : idClient_Client.keySet()) {
 
-			vehicle = getNotFullVehicle(vehicleContainer, quantityBus, ((ITimeableStock) idClient_Client.get(id)).getWeight(), 0);
+			double weight = 0;
+			if (idClient_Client.get(id) instanceof ITimeableStock) {
+				weight = ((ITimeableStock) idClient_Client.get(id)).getWeight();
+			}
+
+			vehicle = getNotFullVehicle(vehicleContainer, quantityBus, weight, 0);
 
 			if (vehicle != null) {
 				vehicle.put(id, idClient_Client.get(id));
