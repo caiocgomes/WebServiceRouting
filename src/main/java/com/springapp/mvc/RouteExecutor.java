@@ -265,7 +265,7 @@ public class RouteExecutor {
 //		int totalPairPoints = 40 + 1; // pares de pontos dos clientes e par de pontos do onibus
 
 		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator));
+		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, true));
 		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
 				.createObject(new TransporterContainerRequest(costCalculator));
 
@@ -274,6 +274,8 @@ public class RouteExecutor {
 
 //		changeSPTransClientsAndContainer(vehicleContainer, idClient_Client, totalPairPoints, quantityBus);
 		changeDeliveryBusinessClientsAndContainer(vehicleContainer, idClient_Client, totalPairPoints, quantityBus);
+
+		boolean hasStartpoint = true;
 
 		ITimeableTransporter vehicle;
 		// distribui os pontos nos diversos onibus do container
@@ -315,7 +317,7 @@ public class RouteExecutor {
 
 		IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory.createObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
 		IMonteCarlo monteCarlo = MonteCarloFactory.createObject(new MonteCarloRequest(decisionRule, vehicleContainer,
-				PermutatorFactory.createObject(new PermutatorRequest())));
+				PermutatorFactory.createObject(new PermutatorRequest(hasStartpoint))));
 
 		try {
 			System.out.println("Start: " + GregorianCalendar.getInstance().getTime());
