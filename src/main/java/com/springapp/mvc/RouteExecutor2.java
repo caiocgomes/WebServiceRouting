@@ -1,7 +1,10 @@
 package com.springapp.mvc;
 
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -123,6 +126,119 @@ public class RouteExecutor2 {
 		}
 
 		return null;
+	}
+
+	static void changeSPTransClientsAndContainerTest(ITransporterContainer vehicleContainer, Map<Integer, ITimeableTransportable> idClient_Client,
+			int totalPairPoints, int quantityBus)
+					throws Exception {
+
+		// obtem uma lista de pares de pontos aleatorios com periodo entre eles
+		Map<LatLng, Tuple<LatLng, Tuple<Period, Calendar>>> pointSet = Common.CreatePointsWithPeriodTest(totalPairPoints);
+
+		int count = 1;
+		Period twoT; // 2T+30min
+		Period maxTolerance = new Period(0, 60, 0, 0);
+		Period idealTolerance = new Period(0, 30, 0, 0);
+		Period zeroPeriod = new Period(0);
+
+		Calendar dateNow = Calendar.getInstance();
+		Calendar busStartDate = new GregorianCalendar(2013,
+				dateNow.get(Calendar.MONTH) + 1,
+				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 4, 30, 0);
+		Calendar busEndDate = new GregorianCalendar(2013,
+				dateNow.get(Calendar.MONTH) + 1,
+				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 23, 00, 0);
+
+		LatLng busStartPoint = null;
+		LatLng busEndPoint = null;
+
+//		List<Calendar> dates = new ArrayList<Calendar>();
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 7, 0, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 8, 30, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 10, 0, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 12, 0, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 13, 0, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 15, 0, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 17, 0, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 18, 30, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 19, 0, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 19, 45, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 20, 30, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 20, 50, 0));
+//		dates.add(new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 10, 0));
+
+		// insere pontos de clientes
+		for (LatLng point : pointSet.keySet()) {
+
+			// é feio, mas é apenas para testes
+//			if (count >= totalPairPoints) {
+//				busStartPoint = point;
+//				busEndPoint = pointSet.get(point).getItem1();
+//				break;
+//			}
+
+//					Calendar startDate = getDate();
+//					Calendar endDate = new GregorianCalendar();
+//					endDate.setTimeInMillis(startDate.getTimeInMillis()
+//							+ pointSet.get(point).getItem2().toStandardDuration()
+//							.getMillis());
+
+			Calendar endDate = pointSet.get(point).getItem2().getItem2();
+
+			twoT = pointSet.get(point).getItem2().getItem1().plus(pointSet.get(point).getItem2().getItem1());
+
+			// tempo minimo ideal do ponto inicial
+			Calendar startDate = new GregorianCalendar();
+			startDate.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
+					- idealTolerance.toStandardDuration().getMillis());
+
+			// tempo minimo permitido do ponto inicial
+			Calendar startMinDateTime = new GregorianCalendar();
+			startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
+					- maxTolerance.toStandardDuration().getMillis());
+
+			// tempo maximo do ponto inicial
+			Calendar startMaxDateTime = new GregorianCalendar();
+			startMaxDateTime.setTimeInMillis(endDate.getTimeInMillis() - pointSet.get(point).getItem2().getItem1().toStandardDuration().getMillis());
+
+			// tempo minimo ideal do ponto final
+			endDate.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
+
+			idClient_Client.put(count, (ITimeableTransportable) TransportableFactory
+					.createObject(new TimeableTransportableRequest(count, TransportableType.Person,
+							new TimeableTransportableLatLng(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
+							new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true))));
+
+			count++;
+		}
+
+		LatLng origin = new LatLng(-23.503179072016273, -46.65936302124023);
+		LatLng destination = new LatLng(-23.49373353367442, -46.6415102380371);
+		busStartPoint = origin;
+		busEndPoint = destination;
+
+		ITimeCalculator timeCalculator = TimeCalculatorFactory.createObject(new TimeCalculatorRequest(DistanceType.Real, true));
+
+		// adiciona veiculos no container
+		for (int i = 0; i < quantityBus; i++) {
+			vehicleContainer.add((ITimeableTransporter) TransporterFactory.createObject(new TimeableTransporterRequest(
+					new Timeable(busStartDate, zeroPeriod, idealTolerance), new Timeable(busEndDate, zeroPeriod, idealTolerance),
+					busStartPoint, busEndPoint, timeCalculator)));
+		}
+
 	}
 
 	static void changeSPTransClientsAndContainer(ITransporterContainer vehicleContainer, Map<Integer, ITimeableTransportable> idClient_Client,
@@ -283,7 +399,7 @@ public class RouteExecutor2 {
 //		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
 //		int totalPairPoints = 40 + 1; // pares de pontos dos clientes e par de pontos do onibus
 
-		boolean isSPTrans = false;
+		boolean isSPTrans = true;
 
 		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
 		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, isSPTrans));
@@ -294,9 +410,46 @@ public class RouteExecutor2 {
 		Map<Integer, ITimeableTransportable> idClient_Client = new HashMap<Integer, ITimeableTransportable>();
 
 //		changeSPTransClientsAndContainer(vehicleContainer, idClient_Client, totalPairPoints, quantityBus);
-		changeDeliveryBusinessClientsAndContainer(vehicleContainer, idClient_Client, 90, quantityBus);
+//		changeDeliveryBusinessClientsAndContainer(vehicleContainer, idClient_Client, 90, quantityBus);
+		changeSPTransClientsAndContainerTest(vehicleContainer, idClient_Client, 14, 1);
 
-		boolean hasStartpoint = false;
+		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+
+		System.out.println("------------------------");
+		System.out.println("Salve empty Container? s/n");
+		String response = bufferRead.readLine();
+		if (response.equals("s")) {
+			try
+			{
+				FileOutputStream fileOut = new FileOutputStream("vehicleContainerEmpty.ttt");
+				ObjectOutputStream out = new ObjectOutputStream(fileOut);
+				out.writeObject(vehicleContainer);
+				out.close();
+				fileOut.close();
+			} catch (IOException i)
+			{
+				i.printStackTrace();
+			}
+		}
+
+		System.out.println("Salve clients? s/n");
+		response = bufferRead.readLine();
+		if (response.equals("s")) {
+			try
+			{
+				FileOutputStream fileOut = new FileOutputStream("clients.ttt");
+				ObjectOutputStream out = new ObjectOutputStream(fileOut);
+				out.writeObject(idClient_Client);
+				out.close();
+				fileOut.close();
+			} catch (IOException i)
+			{
+				i.printStackTrace();
+			}
+		}
+		System.out.println("------------------------");
+
+		boolean hasStartpoint = true;
 
 		ITimeableTransporter vehicle;
 		// distribui os pontos nos diversos onibus do container
@@ -314,7 +467,7 @@ public class RouteExecutor2 {
 			}
 		}
 
-		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+
 //		System.out.println("------------------------");
 //		System.out.println("Salve Container? s/n");
 //		String response = bufferRead.readLine();

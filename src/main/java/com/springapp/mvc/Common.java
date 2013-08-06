@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +128,7 @@ public class Common {
 	}
 
 	@SuppressWarnings("unused")
-	public static Tuple<LatLng, Map<LatLng, Period>> CreatePointsWithPeriodDeliveryBusinessFromEXisting(Integer quantityPoints) throws Exception {
+	public static Tuple<LatLng, Map<LatLng, Period>> CreatePointsWithPeriodDeliveryBusinessFromExisting(Integer quantityPoints) throws Exception {
 
 		Map<LatLng, Period> pointMap = new HashMap<LatLng, Period>();
 
@@ -272,6 +274,140 @@ public class Common {
 		}
 
 		return tuple;
+	}
+
+	public static Map<LatLng, Tuple<LatLng, Tuple<Period, Calendar>>> CreatePointsWithPeriodTest(Integer quantityPairs) throws Exception {
+
+		Map<LatLng, Tuple<LatLng, Tuple<Period, Calendar>>> pointMap = new HashMap<LatLng, Tuple<LatLng, Tuple<Period, Calendar>>>();
+
+//		try {
+//
+//			BufferedReader br = new BufferedReader(new FileReader("C:/Users/su.yinhe/logistica/webservice/pointsTest.ttt"));
+//			String line;
+//			while ((line = br.readLine()) != null) {
+//				String[] parts = line.split("=");
+//
+//				LatLng point = new LatLng(NumberFormat.getNumberInstance().parse(parts[0]).doubleValue(), NumberFormat.getNumberInstance().parse(parts[1]).doubleValue());
+//
+//				pointMap.put(point, value)
+//			}
+//			br.close();
+//
+//		} catch (IOException e) {
+//			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//		} catch (ClassNotFoundException e) {
+//			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//		}
+
+		Calendar dateNow = Calendar.getInstance();
+
+		LatLng origin = new LatLng(-23.40568112270302, -46.68415895263672);
+		LatLng destination = new LatLng(-23.56427895103743, -47.01893232543947);
+		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 8, 0, 0))));
+
+		origin = new LatLng(-23.48495219578804, -46.85448072631836);
+		destination = new LatLng(-23.79742650263333, -46.91618173583984);
+		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 10, 10, 0))));
+
+		origin = new LatLng(-23.62642613560707, -46.93334787353515);
+		destination = new LatLng(-23.76551202306803, -46.82578360839844);
+		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 11, 50, 0))));
+
+		origin = new LatLng(-23.85471698145226, -46.75574576660156);
+		destination = new LatLng(-23.74917208724653, -46.44400870605469);
+		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 14, 20, 0))));
+
+		// 5
+		origin = new LatLng(-23.86350851568398, -46.60743033691406);
+		destination = new LatLng(-23.668699449390672, -46.206429360351564);
+		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 16, 10, 0))));
+
+		origin = new LatLng(-23.77556634849701, -46.31629264160156);
+		destination = new LatLng(-23.461002598059007, -46.25449454589844);
+		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 17, 40, 0))));
+
+		origin = new LatLng(-23.55670981619539, -46.13913810058593);
+		destination = new LatLng(-23.28325678030005, -46.42478263183593);
+		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 30, 0))));
+
+//		origin = new LatLng(-23.34883615855892, -46.18033683105469);
+//		destination = new LatLng(-23.44210480420892, -46.59781729980468);
+//		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+//				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+//				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 23, 00, 0))));
+
+//		origin = new LatLng(-23.38161370727884, -46.41791617675781);
+//		destination = new LatLng(-23.51893895962348, -46.63764273925781);
+//		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+//				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+//				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 23, 0, 0))));
+
+		// 10
+//		origin = new LatLng(-23.27694936669028, -46.68982779785156);
+//		destination = new LatLng(-23.707684581643, -46.60880362792968);
+//		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+//				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+//				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 20, 30, 0))));
+//
+//		origin = new LatLng(-23.56048630516684, -46.71317374511719);
+//		destination = new LatLng(-23.630960828223802, -46.411736367187494);
+//		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+//				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+//				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 20, 50, 0))));
+//
+//		origin = new LatLng(-23.68882226117832, -46.70356070800781);
+//		destination = new LatLng(-23.58062574621202, -46.35886466308593);
+//		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+//				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+//				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 30, 0))));
+//
+//		origin = new LatLng(-23.71774337118144, -46.48932730957031);
+//		destination = new LatLng(-23.49123344160243, -46.44263541503906);
+//		pointMap.put(origin, new Tuple<LatLng, Tuple<Period, Calendar>>(destination, new Tuple<Period, Calendar>(
+//				ServiceGetter.getRouteTimeFromServiceRoute(origin, destination),
+//				new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+//						dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 50, 0))));
+
+//		try
+//		{
+//			FileOutputStream fileOut = new FileOutputStream("pointsTest.ttt");
+//			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+//			out.writeObject(pointMap);
+//			out.close();
+//			fileOut.close();
+//		}
+//		catch(IOException i)
+//		{
+//			i.printStackTrace();
+//		}
+
+		return pointMap;
 	}
 
 	@SuppressWarnings("unused")
