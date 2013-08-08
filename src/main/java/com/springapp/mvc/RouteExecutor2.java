@@ -396,7 +396,7 @@ public class RouteExecutor2 {
 	public static String start(Integer quantityClients, Integer quantityBus,
 			Integer busCapacity) throws Exception {
 
-//		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
+		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
 //		int totalPairPoints = 40 + 1; // pares de pontos dos clientes e par de pontos do onibus
 
 		boolean isSPTrans = true;
@@ -409,9 +409,9 @@ public class RouteExecutor2 {
 		// Map de clientes
 		Map<Integer, ITimeableTransportable> idClient_Client = new HashMap<Integer, ITimeableTransportable>();
 
-//		changeSPTransClientsAndContainer(vehicleContainer, idClient_Client, totalPairPoints, quantityBus);
+		changeSPTransClientsAndContainer(vehicleContainer, idClient_Client, totalPairPoints, quantityBus);
 //		changeDeliveryBusinessClientsAndContainer(vehicleContainer, idClient_Client, 90, quantityBus);
-		changeSPTransClientsAndContainerTest(vehicleContainer, idClient_Client, 14, 1);
+//		changeSPTransClientsAndContainerTest(vehicleContainer, idClient_Client, 14, 1);
 
 		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
 
