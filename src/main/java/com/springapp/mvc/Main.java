@@ -1,11 +1,19 @@
 package com.springapp.mvc;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.joda.time.Period;
 
+import com.maplink.framework.routing.vehiclerouting.classes.Tuple;
 import com.maplink.framework.routing.vehiclerouting.location.LatLng;
 import com.maplink.framework.routing.vehiclerouting.webservice.ServiceGetter;
 
@@ -18,9 +26,64 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 
-//		RouteExecutor2.start(13, 1, 30);
+		RouteExecutor2.start(60, 6, 30);
 //		test();
-		test2();
+//		test2();
+//		fillPlotCost();
+	}
+
+	static void fillPlotCost() throws Exception {
+		try {
+
+			String file = "1375886204275";
+			BufferedReader br = new BufferedReader(new FileReader("C:/Users/su.yinhe/logistica/webservice/monteCarlo" + file + ".txt"));
+			String line;
+
+			PrintWriter plotWriter = new PrintWriter("plotCost" + file + ".txt");
+
+			int count = 0;
+
+			double minimum = Double.MAX_VALUE;
+			double previous = Double.MAX_VALUE;
+			while ((line = br.readLine()) != null) {
+
+				if (line.startsWith("ContainerCost")) {
+					String[] parts = line.split(":");
+					double num = Double.parseDouble(parts[1].trim());
+
+					if (num < minimum) {
+						minimum = num;
+					}
+
+					if (previous != num) {
+						previous = num;
+						line = br.readLine();
+						parts = line.split(":");
+						plotWriter.println(num + "," + parts[1].trim());
+					}
+				}
+
+				if (line.startsWith("Same")) {
+					double num = minimum;
+
+					if (previous != num) {
+						previous = num;
+						String[] parts = line.split(":");
+						plotWriter.println(num + "," + parts[1].trim());
+					}
+				}
+
+				if (count % 100 < 1) {
+					plotWriter.flush();
+				}
+				count++;
+			}
+			br.close();
+			plotWriter.close();
+
+		} catch (IOException e) {
+			e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+		}
 	}
 
 	static void test2() throws Exception {
@@ -179,6 +242,52 @@ public class Main {
 		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
 		System.out.println(period);
 
+	}
+
+	static void CreatePointsWithPeriod() {
+
+		Map<LatLng, Tuple<LatLng, Period>> pointMap = new HashMap<LatLng, Tuple<LatLng, Period>>();
+		Map<LatLng, Tuple<LatLng, Period>> newPointMap = new HashMap<LatLng, Tuple<LatLng, Period>>();
+
+		try {
+
+			// FileInputStream fileIn =
+			// new FileInputStream("distanceDict.ttt");
+
+			// InputStream in = Common.class.getClassLoader().getResourceAsStream("/distanceWithPeriod.ttt");
+			// InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("/distanceWithPeriod.ttt");
+
+			FileInputStream in = new FileInputStream("C:/Users/su.yinhe/logistica/webservice/distanceWithPeriod.ttt");
+			if (in != null) {
+				ObjectInputStream objectInputStream = new ObjectInputStream(in);
+				pointMap = (Map<LatLng, Tuple<LatLng, Period>>) objectInputStream.readObject();
+				objectInputStream.close();
+				in.close();
+
+				for (LatLng point : pointMap.keySet()) {
+					newPointMap.put(new LatLng(point.getLat(), point.getLng()),
+							new Tuple<LatLng, Period>(new LatLng(pointMap.get(point).getItem1().getLat(), pointMap.get(point).getItem1().getLng()),
+									pointMap.get(point).getItem2()));
+				}
+			}
+			in.close();
+		} catch (IOException e) {
+			e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+		}
+
+		try
+		{
+			FileOutputStream fileOut = new FileOutputStream("distanceWithPeriod.ttt");
+			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+			out.writeObject(newPointMap);
+			out.close();
+			fileOut.close();
+		} catch (IOException i)
+		{
+			i.printStackTrace();
+		}
 	}
 
 }

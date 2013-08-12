@@ -5,9 +5,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -241,12 +243,12 @@ public class RouteExecutor2 {
 
 	}
 
-	static void changeSPTransClientsAndContainer(ITransporterContainer vehicleContainer, Map<Integer, ITimeableTransportable> idClient_Client,
-			int totalPairPoints, int quantityBus)
+	static ITransporterContainer changeSPTransClientsAndContainer(Map<Integer, ITimeableTransportable> idClient_Client,
+			List<ITimeableTransportable> waitingList, int totalPairPoints, int quantityBus)
 					throws Exception {
 
 		// obtem uma lista de pares de pontos aleatorios com periodo entre eles
-		Map<LatLng, Tuple<LatLng, Period>> pointSet = Common.CreatePointsWithPeriod(totalPairPoints);
+		Map<LatLng, Tuple<LatLng, Period>> pointSet = Common.CreatePointsWithPeriod(totalPairPoints + 10);
 
 		int count = 1;
 		Period twoT; // 2T+30min
@@ -269,10 +271,11 @@ public class RouteExecutor2 {
 		for (LatLng point : pointSet.keySet()) {
 
 			// é feio, mas é apenas para testes
-			if (count >= totalPairPoints) {
+			if (count == totalPairPoints) {
 				busStartPoint = point;
 				busEndPoint = pointSet.get(point).getItem1();
-				break;
+				count++;
+				continue;
 			}
 
 //					Calendar startDate = getDate();
@@ -302,15 +305,33 @@ public class RouteExecutor2 {
 			// tempo minimo ideal do ponto final
 			endDate.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
 
+			// é feio, mas é apenas para testes
+			if (count > totalPairPoints) {
+				waitingList.add((ITimeableTransportable) TransportableFactory
+						.createObject(new TimeableTransportableRequest(count, TransportableType.Person,
+								new TimeableTransportableLatLng(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
+								new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true))));
+				System.out.println("client: " + count + ", " + endDate.getTime() + ", " + pointSet.get(point).getItem2());
+				count++;
+				continue;
+			}
+
 			idClient_Client.put(count, (ITimeableTransportable) TransportableFactory
 					.createObject(new TimeableTransportableRequest(count, TransportableType.Person,
 							new TimeableTransportableLatLng(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
 							new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true))));
 
+			System.out.println("client: " + count + ", " + endDate.getTime() + ", " + pointSet.get(point).getItem2());
+
 			count++;
 		}
 
 		ITimeCalculator timeCalculator = TimeCalculatorFactory.createObject(new TimeCalculatorRequest(DistanceType.Real, true));
+
+		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
+		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, waitingList, true, true));
+		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
+				.createObject(new TransporterContainerRequest(costCalculator, waitingList));
 
 		// adiciona veiculos no container
 		for (int i = 0; i < quantityBus; i++) {
@@ -319,10 +340,10 @@ public class RouteExecutor2 {
 					busStartPoint, busEndPoint, timeCalculator)));
 		}
 
+		return vehicleContainer;
 	}
 
-	static void changeDeliveryBusinessClientsAndContainer(ITransporterContainer vehicleContainer,
-			Map<Integer, ITimeableTransportable> idClient_Client,
+	static ITransporterContainer changeDeliveryBusinessClientsAndContainer(Map<Integer, ITimeableTransportable> idClient_Client,
 			int totalPoints, int quantityBus)
 					throws Exception {
 
@@ -384,73 +405,22 @@ public class RouteExecutor2 {
 
 		ITimeCalculator timeCalculator = TimeCalculatorFactory.createObject(new TimeCalculatorRequest(DistanceType.Real, true));
 
+		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
+		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, false));
+		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
+				.createObject(new TransporterContainerRequest(costCalculator));
+
 		// adiciona veiculos no container
 		for (int i = 0; i < quantityBus; i++) {
 			vehicleContainer.add((ITimeableTransporter) TransporterFactory.createObject(new TimeableTransporterRequest(
 					new Timeable(busStartDate, zeroPeriod, definedTolerance), new Timeable(busEndDate, zeroPeriod, definedTolerance),
 					1000.0, busStartPoint, busEndPoint, timeCalculator)));
 		}
+
+		return vehicleContainer;
 	}
 
-	@SuppressWarnings("null")
-	public static String start(Integer quantityClients, Integer quantityBus,
-			Integer busCapacity) throws Exception {
-
-		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
-//		int totalPairPoints = 40 + 1; // pares de pontos dos clientes e par de pontos do onibus
-
-		boolean isSPTrans = true;
-
-		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, isSPTrans));
-		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
-				.createObject(new TransporterContainerRequest(costCalculator));
-
-		// Map de clientes
-		Map<Integer, ITimeableTransportable> idClient_Client = new HashMap<Integer, ITimeableTransportable>();
-
-		changeSPTransClientsAndContainer(vehicleContainer, idClient_Client, totalPairPoints, quantityBus);
-//		changeDeliveryBusinessClientsAndContainer(vehicleContainer, idClient_Client, 90, quantityBus);
-//		changeSPTransClientsAndContainerTest(vehicleContainer, idClient_Client, 14, 1);
-
-		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-
-		System.out.println("------------------------");
-		System.out.println("Salve empty Container? s/n");
-		String response = bufferRead.readLine();
-		if (response.equals("s")) {
-			try
-			{
-				FileOutputStream fileOut = new FileOutputStream("vehicleContainerEmpty.ttt");
-				ObjectOutputStream out = new ObjectOutputStream(fileOut);
-				out.writeObject(vehicleContainer);
-				out.close();
-				fileOut.close();
-			} catch (IOException i)
-			{
-				i.printStackTrace();
-			}
-		}
-
-		System.out.println("Salve clients? s/n");
-		response = bufferRead.readLine();
-		if (response.equals("s")) {
-			try
-			{
-				FileOutputStream fileOut = new FileOutputStream("clients.ttt");
-				ObjectOutputStream out = new ObjectOutputStream(fileOut);
-				out.writeObject(idClient_Client);
-				out.close();
-				fileOut.close();
-			} catch (IOException i)
-			{
-				i.printStackTrace();
-			}
-		}
-		System.out.println("------------------------");
-
-		boolean hasStartpoint = true;
-
+	static void populateVehicles(Map<Integer, ITimeableTransportable> idClient_Client, ITransporterContainer vehicleContainer, int quantityBus) {
 		ITimeableTransporter vehicle;
 		// distribui os pontos nos diversos onibus do container
 		for (int id : idClient_Client.keySet()) {
@@ -466,6 +436,180 @@ public class RouteExecutor2 {
 				vehicle.put(id, idClient_Client.get(id));
 			}
 		}
+	}
+
+	static String printResults(ITransporterContainer containerWithOptimisedStrategy) {
+		StringBuilder csvString;
+		StringBuilder csvStringFinal = new StringBuilder();
+		int count = 1;
+
+		System.out.println("Cost: " + containerWithOptimisedStrategy.getContainerCost());
+
+		for (ITimeableTransporter transporter : containerWithOptimisedStrategy) {
+
+			csvString = new StringBuilder();
+			System.out.println();
+			System.out.println("Trajectory: " + count);
+			System.out.println("TrajectoryEndDateTime: "
+					+ transporter.getCurrentDeliveryTime().getTime());
+			System.out.println("TrajectoryValidation: "
+					+ transporter.getLastValidation());
+			if (transporter instanceof ITruck) {
+				System.out.println("TotalWeight: "
+						+ ((ITruck) transporter).getCurrentWeight());
+			}
+
+			for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajectory()) {
+
+				String arrivalDateTime = "";
+
+				if (monteCarloPoint.getTransporterArrivalDateTime() != null) {
+					arrivalDateTime = monteCarloPoint.getTransporterArrivalDateTime().getTime().toString();
+				}
+
+				String currentDateTime = "";
+
+				if (monteCarloPoint.getCurrentDeliveryTime() != null) {
+					currentDateTime = monteCarloPoint.getCurrentDeliveryTime().getTime().toString();
+				}
+
+				if (transporter instanceof ITruck) {
+					System.out.println("Id: "
+							+ monteCarloPoint.getId()
+							+ ", index: "
+							+ monteCarloPoint.getIndex()
+							+ ", latlng: "
+							+ monteCarloPoint.getLatLng()
+							+ ", isEnd: "
+							+ monteCarloPoint.isEnd()
+							+ ", tolerance: "
+							+ monteCarloPoint.getTime().getAfterTolerance()
+							+ ", time: "
+							+ monteCarloPoint.getTime().getDateTime().getTime()
+							+ ", currentTime: "
+							+ monteCarloPoint.getCurrentDeliveryTime().getTime()
+							+ ", arrivalTime: "
+							+ arrivalDateTime);
+				}
+				else {
+					System.out.println("Id: "
+							+ monteCarloPoint.getId()
+							+ ", index: "
+							+ monteCarloPoint.getIndex()
+							+ ", latlng: "
+							+ monteCarloPoint.getLatLng()
+							+ ", isEnd: "
+							+ monteCarloPoint.isEnd()
+							+ ", maxTime: "
+							+ monteCarloPoint.getTime().getMaxDateTime().getTime()
+							+ ", currentTime: "
+							+ currentDateTime
+							+ ", arrivalTime: "
+							+ arrivalDateTime);
+				}
+
+				StringBuilder csvPoints = new StringBuilder();
+				if (csvString.length() == 0) {
+					csvPoints.append("[")
+					.append(monteCarloPoint.getLatLng().getLng())
+					.append(",")
+					.append(monteCarloPoint.getLatLng().getLat())
+					.append("]");
+				} else {
+					csvPoints.append(",\n[")
+					.append(monteCarloPoint.getLatLng().getLng())
+					.append(",")
+					.append(monteCarloPoint.getLatLng().getLat())
+					.append("]");
+				}
+
+				csvString.append(csvPoints);
+			}
+
+			csvStringFinal.append("var latLongs")
+			.append(Integer.toString(count)).append(" = [")
+			.append(csvString).append("];\n").append("traceRoute(")
+			.append("latLongs").append(Integer.toString(count))
+			.append(",get_random_color())\n\n");
+			count++;
+
+		}
+
+		System.out.println("Caio: It's ended: Now we plot");
+		return csvStringFinal.toString();
+	}
+
+	@SuppressWarnings("null")
+	public static String start(Integer quantityClients, Integer quantityBus,
+			Integer busCapacity) throws Exception {
+
+		int totalPairPoints = quantityClients + 1; // pares de pontos dos clientes e par de pontos do onibus
+//		int totalPairPoints = 40 + 1; // pares de pontos dos clientes e par de pontos do onibus
+
+		// Map de clientes
+		Map<Integer, ITimeableTransportable> idClient_Client = new HashMap<Integer, ITimeableTransportable>();
+
+		List<ITimeableTransportable> waitingList = new ArrayList<ITimeableTransportable>();
+
+		ITransporterContainer vehicleContainer = changeSPTransClientsAndContainer(idClient_Client, waitingList, totalPairPoints, quantityBus);
+//		ITransporterContainer vehicleContainer = changeDeliveryBusinessClientsAndContainer(vehicleContainer, idClient_Client, 90, quantityBus);
+//		ITransporterContainer vehicleContainer = changeSPTransClientsAndContainerTest(vehicleContainer, idClient_Client, 14, 1);
+
+		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+
+		System.out.println("------------------------");
+		System.out.println("Salve empty Container? s/n");
+		String response = bufferRead.readLine();
+		if (response.equals("s")) {
+			try
+			{
+				FileOutputStream fileOut = new FileOutputStream("vehicleContainerEmpty" + quantityClients + "-" + waitingList.size() + ".ttt");
+				ObjectOutputStream out = new ObjectOutputStream(fileOut);
+				out.writeObject(vehicleContainer);
+				out.close();
+				fileOut.close();
+			} catch (IOException i)
+			{
+				i.printStackTrace();
+			}
+		}
+
+		System.out.println("Salve clients? s/n");
+		response = bufferRead.readLine();
+		if (response.equals("s")) {
+			try
+			{
+				FileOutputStream fileOut = new FileOutputStream("clients" + quantityClients + "-" + waitingList.size() + ".ttt");
+				ObjectOutputStream out = new ObjectOutputStream(fileOut);
+				out.writeObject(idClient_Client);
+				out.close();
+				fileOut.close();
+			} catch (IOException i)
+			{
+				i.printStackTrace();
+			}
+		}
+		System.out.println("------------------------");
+
+		boolean hasStartpoint = true;
+
+		populateVehicles(idClient_Client, vehicleContainer, quantityBus);
+
+//		ITimeableTransporter vehicle;
+//		// distribui os pontos nos diversos onibus do container
+//		for (int id : idClient_Client.keySet()) {
+//
+//			double weight = 0;
+//			if (idClient_Client.get(id) instanceof ITimeableStock) {
+//				weight = ((ITimeableStock) idClient_Client.get(id)).getWeight();
+//			}
+//
+//			vehicle = getNotFullVehicle(vehicleContainer, quantityBus, weight, 0);
+//
+//			if (vehicle != null) {
+//				vehicle.put(id, idClient_Client.get(id));
+//			}
+//		}
 
 
 //		System.out.println("------------------------");
@@ -495,100 +639,117 @@ public class RouteExecutor2 {
 			ITransporterContainer containerWithOptimisedStrategy = monteCarlo.run();
 			System.out.println("End: " + GregorianCalendar.getInstance().getTime());
 
-			StringBuilder csvString;
-			StringBuilder csvStringFinal = new StringBuilder();
-			int count = 1;
+			RouteExecutor2.printResults(containerWithOptimisedStrategy);
 
-			System.out.println("Cost: " + containerWithOptimisedStrategy.getContainerCost());
+			// segunda fase
+			IDistanceCalculator distanceCalculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
+			ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(distanceCalculator, waitingList, true, false));
+			containerWithOptimisedStrategy.setCostCalculator(costCalculator);
+			containerWithOptimisedStrategy.getWaitingList().clear();
 
-			for (ITimeableTransporter transporter : containerWithOptimisedStrategy) {
+			monteCarlo = MonteCarloFactory.createObject(new MonteCarloRequest(decisionRule, containerWithOptimisedStrategy,
+					PermutatorFactory.createObject(new PermutatorRequest(hasStartpoint))));
 
-				csvString = new StringBuilder();
-				System.out.println();
-				System.out.println("Trajectory: " + count);
-				System.out.println("TrajectoryEndDateTime: "
-						+ transporter.getCurrentDeliveryTime().getTime());
-				System.out.println("TrajectoryValidation: "
-						+ transporter.getLastValidation());
-				if (transporter instanceof ITruck) {
-					System.out.println("TotalWeight: "
-							+ ((ITruck) transporter).getCurrentWeight());
-				}
+			System.out.println("Start: " + GregorianCalendar.getInstance().getTime());
+			containerWithOptimisedStrategy = monteCarlo.run();
+			System.out.println("End: " + GregorianCalendar.getInstance().getTime());
+			// fim da segunda fase
 
-				for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajectory()) {
-
-					String arrivalDateTime = "";
-
-					if (monteCarloPoint.getTransporterArrivalDateTime() != null) {
-						arrivalDateTime = monteCarloPoint.getTransporterArrivalDateTime().getTime().toString();
-					}
-
-					if (transporter instanceof ITruck) {
-						System.out.println("Id: "
-								+ monteCarloPoint.getId()
-								+ ", index: "
-								+ monteCarloPoint.getIndex()
-								+ ", latlng: "
-								+ monteCarloPoint.getLatLng()
-								+ ", isEnd: "
-								+ monteCarloPoint.isEnd()
-								+ ", tolerance: "
-								+ monteCarloPoint.getTime().getAfterTolerance()
-								+ ", time: "
-								+ monteCarloPoint.getTime().getDateTime().getTime()
-								+ ", currentTime: "
-								+ monteCarloPoint.getCurrentDeliveryTime().getTime()
-								+ ", arrivalTime: "
-								+ arrivalDateTime);
-					}
-					else {
-						System.out.println("Id: "
-								+ monteCarloPoint.getId()
-								+ ", index: "
-								+ monteCarloPoint.getIndex()
-								+ ", latlng: "
-								+ monteCarloPoint.getLatLng()
-								+ ", isEnd: "
-								+ monteCarloPoint.isEnd()
-								+ ", maxTime: "
-								+ monteCarloPoint.getTime().getMaxDateTime().getTime()
-								+ ", currentTime: "
-								+ monteCarloPoint.getCurrentDeliveryTime().getTime()
-								+ ", arrivalTime: "
-								+ arrivalDateTime);
-					}
-
-					StringBuilder csvPoints = new StringBuilder();
-					if (csvString.length() == 0) {
-						csvPoints.append("[")
-						.append(monteCarloPoint.getLatLng().getLng())
-						.append(",")
-						.append(monteCarloPoint.getLatLng().getLat())
-						.append("]");
-					} else {
-						csvPoints.append(",\n[")
-						.append(monteCarloPoint.getLatLng().getLng())
-						.append(",")
-						.append(monteCarloPoint.getLatLng().getLat())
-						.append("]");
-					}
-
-					csvString.append(csvPoints);
-				}
-
-				csvStringFinal.append("var latLongs")
-				.append(Integer.toString(count)).append(" = [")
-				.append(csvString).append("];\n").append("traceRoute(")
-				.append("latLongs").append(Integer.toString(count))
-				.append(",get_random_color())\n\n");
-				count++;
-
-			}
+//			StringBuilder csvString;
+//			StringBuilder csvStringFinal = new StringBuilder();
+//			int count = 1;
+//
+//			System.out.println("Cost: " + containerWithOptimisedStrategy.getContainerCost());
+//
+//			for (ITimeableTransporter transporter : containerWithOptimisedStrategy) {
+//
+//				csvString = new StringBuilder();
+//				System.out.println();
+//				System.out.println("Trajectory: " + count);
+//				System.out.println("TrajectoryEndDateTime: "
+//						+ transporter.getCurrentDeliveryTime().getTime());
+//				System.out.println("TrajectoryValidation: "
+//						+ transporter.getLastValidation());
+//				if (transporter instanceof ITruck) {
+//					System.out.println("TotalWeight: "
+//							+ ((ITruck) transporter).getCurrentWeight());
+//				}
+//
+//				for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajectory()) {
+//
+//					String arrivalDateTime = "";
+//
+//					if (monteCarloPoint.getTransporterArrivalDateTime() != null) {
+//						arrivalDateTime = monteCarloPoint.getTransporterArrivalDateTime().getTime().toString();
+//					}
+//
+//					if (transporter instanceof ITruck) {
+//						System.out.println("Id: "
+//								+ monteCarloPoint.getId()
+//								+ ", index: "
+//								+ monteCarloPoint.getIndex()
+//								+ ", latlng: "
+//								+ monteCarloPoint.getLatLng()
+//								+ ", isEnd: "
+//								+ monteCarloPoint.isEnd()
+//								+ ", tolerance: "
+//								+ monteCarloPoint.getTime().getAfterTolerance()
+//								+ ", time: "
+//								+ monteCarloPoint.getTime().getDateTime().getTime()
+//								+ ", currentTime: "
+//								+ monteCarloPoint.getCurrentDeliveryTime().getTime()
+//								+ ", arrivalTime: "
+//								+ arrivalDateTime);
+//					}
+//					else {
+//						System.out.println("Id: "
+//								+ monteCarloPoint.getId()
+//								+ ", index: "
+//								+ monteCarloPoint.getIndex()
+//								+ ", latlng: "
+//								+ monteCarloPoint.getLatLng()
+//								+ ", isEnd: "
+//								+ monteCarloPoint.isEnd()
+//								+ ", maxTime: "
+//								+ monteCarloPoint.getTime().getMaxDateTime().getTime()
+//								+ ", currentTime: "
+//								+ monteCarloPoint.getCurrentDeliveryTime().getTime()
+//								+ ", arrivalTime: "
+//								+ arrivalDateTime);
+//					}
+//
+//					StringBuilder csvPoints = new StringBuilder();
+//					if (csvString.length() == 0) {
+//						csvPoints.append("[")
+//						.append(monteCarloPoint.getLatLng().getLng())
+//						.append(",")
+//						.append(monteCarloPoint.getLatLng().getLat())
+//						.append("]");
+//					} else {
+//						csvPoints.append(",\n[")
+//						.append(monteCarloPoint.getLatLng().getLng())
+//						.append(",")
+//						.append(monteCarloPoint.getLatLng().getLat())
+//						.append("]");
+//					}
+//
+//					csvString.append(csvPoints);
+//				}
+//
+//				csvStringFinal.append("var latLongs")
+//				.append(Integer.toString(count)).append(" = [")
+//				.append(csvString).append("];\n").append("traceRoute(")
+//				.append("latLongs").append(Integer.toString(count))
+//				.append(",get_random_color())\n\n");
+//				count++;
+//
+//			}
 
 			bufferRead.close();
 
-			System.out.println("Caio: It's ended: Now we plot");
-			return csvStringFinal.toString();
+//			System.out.println("Caio: It's ended: Now we plot");
+//			return csvStringFinal.toString();
+			return printResults(containerWithOptimisedStrategy);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
