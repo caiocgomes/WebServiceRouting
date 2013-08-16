@@ -8,8 +8,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.xml.rpc.ServiceException;
 
 import org.joda.time.Period;
 
@@ -26,10 +29,58 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 
-		RouteExecutor2.start(60, 6, 30);
-//		test();
-//		test2();
+		String string = RouteExecutor2.start(300, 82, 8);
+		System.out.println(string);
+//		testAddressFinder();
+//		getPointsFromSPTrans();
+//		getFromFile();
 //		fillPlotCost();
+//		FixFileDistanceWithNewLatLngVersion();
+	}
+
+	static void testAddressFinder() throws RemoteException, ServiceException {
+		// R. LUIS PALES MATOS, 19 CS 1 - VILA FACHINI
+		// R. FREI CANECA, 351, BELA VISTA
+
+
+		LatLng point = ServiceGetter.getLatLngFromServiceAddressFinder("R. FREI CANECA", "351", null, "BELA VISTA", "são paulo", "sp");
+		System.out.println(point);
+
+	}
+
+	static void getPointsFromSPTrans() throws ServiceException {
+		try {
+
+			BufferedReader br = new BufferedReader(new FileReader("C:/Users/su.yinhe/logistica/webservice/programacaoSPTrans.csv"));
+
+			PrintWriter writer = new PrintWriter("programacaoSPTrans" + ".txt");
+
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] parts = line.split(";");
+
+				try {
+					LatLng point1 = ServiceGetter.getLatLngFromServiceAddressFinder(parts[1], parts[2], null, parts[3], "são paulo", "sp");
+					LatLng point2 = ServiceGetter.getLatLngFromServiceAddressFinder(parts[4], parts[5], null, parts[6], "são paulo", "sp");
+
+					writer.println(parts[0] + ";"
+							+ point1.getLat() + "#" + point1.getLng() + ";"
+							+ point2.getLat() + "#" + point2.getLng() + ";"
+							+ parts[8] + ";"
+							+ parts[9] + ";"
+							+ parts[10] + ";"
+							+ parts[11] + ";"
+							);
+				} catch (Exception e) {
+					e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+				}
+			}
+			br.close();
+			writer.close();
+
+		} catch (IOException e) {
+			e.printStackTrace();  // To change body of catch statement use File | Settings | File Templates.
+		}
 	}
 
 	static void fillPlotCost() throws Exception {
@@ -86,7 +137,7 @@ public class Main {
 		}
 	}
 
-	static void test2() throws Exception {
+	static void getFromFile() throws Exception {
 		try {
 
 			BufferedReader br = new BufferedReader(new FileReader("C:/Users/su.yinhe/logistica/webservice/monteCarlo28.txt"));
@@ -116,135 +167,7 @@ public class Main {
 		}
 	}
 
-	static void test() throws Exception {
-		LatLng origin = new LatLng(-23.40568112270302, -46.68415895263672);
-		LatLng destination = new LatLng(-23.48495219578804, -46.85448072631836);
-		Period period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.48495219578804, -46.85448072631836);
-		destination = new LatLng(-23.56427895103743, -47.01893232543947);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.56427895103743, -47.01893232543947);
-		destination = new LatLng(-23.62642613560707, -46.93334787353515);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.62642613560707, -46.93334787353515);
-		destination = new LatLng(-23.79742650263333, -46.91618173583984);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.79742650263333, -46.91618173583984);
-		destination = new LatLng(-23.76551202306803, -46.82578360839844);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.76551202306803, -46.82578360839844);
-		destination = new LatLng(-23.85471698145226, -46.75574576660156);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.85471698145226, -46.75574576660156);
-		destination = new LatLng(-23.86350851568398, -46.60743033691406);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.86350851568398, -46.60743033691406);
-		destination = new LatLng(-23.74917208724653, -46.44400870605469);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.74917208724653, -46.44400870605469);
-		destination = new LatLng(-23.77556634849701, -46.31629264160156);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.77556634849701, -46.31629264160156);
-		destination = new LatLng(-23.668699449390672, -46.206429360351564);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.668699449390672, -46.206429360351564);
-		destination = new LatLng(-23.55670981619539, -46.13913810058593);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.55670981619539, -46.13913810058593);
-		destination = new LatLng(-23.461002598059007, -46.25449454589844);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.461002598059007, -46.25449454589844);
-		destination = new LatLng(-23.34883615855892, -46.18033683105469);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.34883615855892, -46.18033683105469);
-		destination = new LatLng(-23.38161370727884, -46.41791617675781);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.38161370727884, -46.41791617675781);
-		destination = new LatLng(-23.28325678030005, -46.42478263183593);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.28325678030005, -46.42478263183593);
-		destination = new LatLng(-23.27694936669028, -46.68982779785156);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.27694936669028, -46.68982779785156);
-		destination = new LatLng(-23.44210480420892, -46.59781729980468);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.44210480420892, -46.59781729980468);
-		destination = new LatLng(-23.51893895962348, -46.63764273925781);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.51893895962348, -46.63764273925781);
-		destination = new LatLng(-23.56048630516684, -46.71317374511719);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.56048630516684, -46.71317374511719);
-		destination = new LatLng(-23.68882226117832, -46.70356070800781);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.68882226117832, -46.70356070800781);
-		destination = new LatLng(-23.707684581643, -46.60880362792968);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.707684581643, -46.60880362792968);
-		destination = new LatLng(-23.71774337118144, -46.48932730957031);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.71774337118144, -46.48932730957031);
-		destination = new LatLng(-23.630960828223802, -46.411736367187494);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.630960828223802, -46.411736367187494);
-		destination = new LatLng(-23.58062574621202, -46.35886466308593);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-		origin = new LatLng(-23.58062574621202, -46.35886466308593);
-		destination = new LatLng(-23.49123344160243, -46.44263541503906);
-		period = ServiceGetter.getRouteTimeFromServiceRoute(origin, destination);
-		System.out.println(period);
-
-	}
-
-	static void CreatePointsWithPeriod() {
+	static void FixFileDistanceWithNewLatLngVersion() {
 
 		Map<LatLng, Tuple<LatLng, Period>> pointMap = new HashMap<LatLng, Tuple<LatLng, Period>>();
 		Map<LatLng, Tuple<LatLng, Period>> newPointMap = new HashMap<LatLng, Tuple<LatLng, Period>>();
