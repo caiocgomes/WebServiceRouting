@@ -5,10 +5,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.joda.time.Period;
@@ -22,7 +24,8 @@ import com.maplink.framework.routing.vehiclerouting.distanceCalculator.IDistance
 import com.maplink.framework.routing.vehiclerouting.distanceCalculator.factory.DistanceCalculatorFactory;
 import com.maplink.framework.routing.vehiclerouting.distanceCalculator.requests.DistanceCalculatorRequest;
 import com.maplink.framework.routing.vehiclerouting.location.LatLng;
-import com.maplink.framework.routing.vehiclerouting.location.TimeableTransportableLatLng;
+import com.maplink.framework.routing.vehiclerouting.location.factory.TimeableTransportableLatLngFactory;
+import com.maplink.framework.routing.vehiclerouting.location.requests.TimeableTransportableLatLngRequest;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.IMonteCarlo;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.IMonteCarloDecisionRule;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.factories.MonteCarloDecisionRuleFactory;
@@ -51,7 +54,7 @@ public class Test {
 		// TODO Auto-generated method stub
 
 //		testMonteCarloSerializable();
-//		testProblem();
+		testProblem();
 //		String string = testMonteCarloEmptyContainer(300, 600, 82, 8);
 //		System.out.println(string);
 		String string = testMonteCarloEmptyContainerDemo(60, 40, 6, 8);
@@ -132,12 +135,14 @@ public class Test {
 
 						newIdClient_Client.put(id, (ITimeableTransportable) TransportableFactory
 								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-										new TimeableTransportableLatLng(id, idClient_Client.get(id).getStartPointInfo().getLatLng(),
-												new Timeable(idClient_Client.get(id).getStartPointInfo().getTime().getDateTime(),
-														startMin, startMax), false),
-														new TimeableTransportableLatLng(id, idClient_Client.get(id).getEndPointInfo().getLatLng(),
-																new Timeable(idClient_Client.get(id).getEndPointInfo().getTime().getDateTime(),
-																		endMin, endMax), true))));
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, idClient_Client.get(id).getStartPointInfo().getLatLng(),
+														new Timeable(idClient_Client.get(id).getStartPointInfo().getTime().getDateTime(),
+																startMin, startMax), false, true)),
+																TimeableTransportableLatLngFactory.createObject(
+																		new TimeableTransportableLatLngRequest(id, idClient_Client.get(id).getEndPointInfo().getLatLng(),
+																				new Timeable(idClient_Client.get(id).getEndPointInfo().getTime().getDateTime(),
+																						endMin, endMax), true, true)))));
 
 						writer.println("newStart: " + newIdClient_Client.get(id).getStartPointInfo().getTime().getMinDateTime().getTime() + ","
 								+ newIdClient_Client.get(id).getStartPointInfo().getTime().getDateTime().getTime()
@@ -148,6 +153,7 @@ public class Test {
 					}
 
 					// altera horario dos usuarios da lista de espera
+					List<ITimeableTransportable> transportables = new ArrayList<ITimeableTransportable>();
 					for (int i = 0; i < vehicleContainer.getWaitingList().size(); i++) {
 
 						ITimeableTransportable transp = vehicleContainer.getWaitingList().get(i);
@@ -172,28 +178,30 @@ public class Test {
 						aux.setTimeInMillis(transp.getEndPointInfo().getTime().getMaxDateTime().getTimeInMillis() + millis);
 						Calendar endMax = (Calendar) aux.clone();
 
-						vehicleContainer.getWaitingList().remove(i);
-						vehicleContainer.getWaitingList().add((ITimeableTransportable) TransportableFactory
+						transportables.add((ITimeableTransportable) TransportableFactory
 								.createObject(new TimeableTransportableRequest(transp.getId(), TransportableType.Person,
-										new TimeableTransportableLatLng(transp.getId(), transp.getStartPointInfo().getLatLng(),
-												new Timeable(transp.getStartPointInfo().getTime().getDateTime(),
-														startMin, startMax), false),
-														new TimeableTransportableLatLng(transp.getId(), transp.getEndPointInfo().getLatLng(),
-																new Timeable(transp.getEndPointInfo().getTime().getDateTime(),
-																		endMin, endMax), true))));
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(transp.getId(), transp.getStartPointInfo().getLatLng(),
+														new Timeable(transp.getStartPointInfo().getTime().getDateTime(),
+																startMin, startMax), false, true)),
+																TimeableTransportableLatLngFactory.createObject(
+																		new TimeableTransportableLatLngRequest(transp.getId(), transp.getEndPointInfo().getLatLng(),
+																				new Timeable(transp.getEndPointInfo().getTime().getDateTime(),
+																						endMin, endMax), true, true)))));
 
 						writer.println("newStart: "
-								+ vehicleContainer.getWaitingList().get(vehicleContainer.getWaitingList().size() - 1).getStartPointInfo().getTime().getMinDateTime().getTime()
-								+ ","
-								+ vehicleContainer.getWaitingList().get(vehicleContainer.getWaitingList().size() - 1).getStartPointInfo().getTime().getDateTime().getTime()
-								+ ", "
-								+ vehicleContainer.getWaitingList().get(vehicleContainer.getWaitingList().size() - 1).getStartPointInfo().getTime().getMaxDateTime().getTime());
+								+ transportables.get(i).getStartPointInfo().getTime().getMinDateTime().getTime() + ","
+								+ transportables.get(i).getStartPointInfo().getTime().getDateTime().getTime() + ", "
+								+ transportables.get(i).getStartPointInfo().getTime().getMaxDateTime().getTime());
 						writer.println("newEnd: "
-								+ vehicleContainer.getWaitingList().get(vehicleContainer.getWaitingList().size() - 1).getEndPointInfo().getTime().getMinDateTime().getTime()
-								+ ","
-								+ vehicleContainer.getWaitingList().get(vehicleContainer.getWaitingList().size() - 1).getEndPointInfo().getTime().getDateTime().getTime()
-								+ ", "
-								+ vehicleContainer.getWaitingList().get(vehicleContainer.getWaitingList().size() - 1).getEndPointInfo().getTime().getMaxDateTime().getTime());
+								+ transportables.get(i).getEndPointInfo().getTime().getMinDateTime().getTime() + ","
+								+ transportables.get(i).getEndPointInfo().getTime().getDateTime().getTime() + ", "
+								+ transportables.get(i).getEndPointInfo().getTime().getMaxDateTime().getTime());
+					}
+
+					vehicleContainer.getWaitingList().clear();
+					for (ITimeableTransportable transp : transportables) {
+						vehicleContainer.getWaitingList().add(transp);
 					}
 
 					writer.flush();
@@ -204,7 +212,7 @@ public class Test {
 
 					// seta um distanceCalculator com cache mais atualizado
 					IDistanceCalculator distanceCalculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-					ICostCalculator costCalculator = new SPTransMaximizeClients(distanceCalculator, null); // sem factory apenas para esse teste
+					ICostCalculator costCalculator = new SPTransMaximizeClients(distanceCalculator); // sem factory apenas para esse teste
 					vehicleContainer.setCostCalculator(costCalculator);
 
 					IMonteCarloDecisionRule decisionRule = MonteCarloDecisionRuleFactory.createObject(new MonteCarloDecisionRuleRequest(0.0, 0.005));
@@ -298,7 +306,7 @@ public class Test {
 
 						// segunda fase
 						IDistanceCalculator distanceCalculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-						ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(distanceCalculator, null, true, false));
+						ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(distanceCalculator, true, false));
 						containerWithOptimisedStrategy.setCostCalculator(costCalculator);
 						containerWithOptimisedStrategy.getWaitingList().clear();
 

@@ -31,8 +31,10 @@ import com.maplink.framework.routing.vehiclerouting.costCalculator.requests.Cost
 import com.maplink.framework.routing.vehiclerouting.distanceCalculator.IDistanceCalculator;
 import com.maplink.framework.routing.vehiclerouting.distanceCalculator.factory.DistanceCalculatorFactory;
 import com.maplink.framework.routing.vehiclerouting.distanceCalculator.requests.DistanceCalculatorRequest;
+import com.maplink.framework.routing.vehiclerouting.location.ITimeableTransportableLatLng;
 import com.maplink.framework.routing.vehiclerouting.location.LatLng;
-import com.maplink.framework.routing.vehiclerouting.location.TimeableTransportableLatLng;
+import com.maplink.framework.routing.vehiclerouting.location.factory.TimeableTransportableLatLngFactory;
+import com.maplink.framework.routing.vehiclerouting.location.requests.TimeableTransportableLatLngRequest;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.IMonteCarlo;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.IMonteCarloDecisionRule;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.factories.MonteCarloDecisionRuleFactory;
@@ -225,8 +227,10 @@ public class RouteExecutor2 {
 
 			idClient_Client.put(count, (ITimeableTransportable) TransportableFactory
 					.createObject(new TimeableTransportableRequest(count, TransportableType.Person,
-							new TimeableTransportableLatLng(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
-							new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true))));
+							TimeableTransportableLatLngFactory.createObject(
+									new TimeableTransportableLatLngRequest(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+									TimeableTransportableLatLngFactory.createObject(
+											new TimeableTransportableLatLngRequest(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true, true)))));
 
 			count++;
 		}
@@ -313,8 +317,11 @@ public class RouteExecutor2 {
 			if (count > totalPairPoints) {
 				waitingList.add((ITimeableTransportable) TransportableFactory
 						.createObject(new TimeableTransportableRequest(count, TransportableType.Person,
-								new TimeableTransportableLatLng(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
-								new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true))));
+								TimeableTransportableLatLngFactory.createObject(
+										new TimeableTransportableLatLngRequest(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true, true)))));
+
 				System.out.println("client: " + count + ", " + endDate.getTime() + ", " + pointSet.get(point).getItem2());
 				count++;
 				continue;
@@ -322,8 +329,10 @@ public class RouteExecutor2 {
 
 			idClient_Client.put(count, (ITimeableTransportable) TransportableFactory
 					.createObject(new TimeableTransportableRequest(count, TransportableType.Person,
-							new TimeableTransportableLatLng(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
-							new TimeableTransportableLatLng(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true))));
+							TimeableTransportableLatLngFactory.createObject(
+									new TimeableTransportableLatLngRequest(count, point, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+									TimeableTransportableLatLngFactory.createObject(
+											new TimeableTransportableLatLngRequest(count, pointSet.get(point).getItem1(), new Timeable(endDate, idealTolerance, idealTolerance), true, true)))));
 
 			System.out.println("client: " + count + ", " + endDate.getTime() + ", " + pointSet.get(point).getItem2());
 
@@ -333,7 +342,7 @@ public class RouteExecutor2 {
 		ITimeCalculator timeCalculator = TimeCalculatorFactory.createObject(new TimeCalculatorRequest(DistanceType.Real, true));
 
 		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, waitingList, true, true));
+		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, true, true));
 		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
 				.createObject(new TransporterContainerRequest(costCalculator, waitingList));
 
@@ -384,6 +393,22 @@ public class RouteExecutor2 {
 				partsPoint = parts[2].split("#");
 				LatLng point2 = new LatLng(Double.parseDouble(partsPoint[0].trim()), Double.parseDouble(partsPoint[1].trim()));
 
+				boolean isWheelchairUser;
+				if (parts[5].trim().equals("Banco")) {
+					isWheelchairUser = false;
+				}
+				else {
+					isWheelchairUser = true;
+				}
+
+				boolean isDouble;
+				if (parts[6].trim().equals("Sim")) {
+					isDouble = true;
+				}
+				else {
+					isDouble = false;
+				}
+
 				String[] dateSplit = parts[3].split(":");
 
 				// tempo do compromisso na ida do arquivo
@@ -415,19 +440,36 @@ public class RouteExecutor2 {
 				if (count > totalPairPoints) {
 					waitingList.add((ITimeableTransportable) TransportableFactory
 							.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-									new TimeableTransportableLatLng(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
-									new TimeableTransportableLatLng(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true))));
+									TimeableTransportableLatLngFactory.createObject(
+											new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+											TimeableTransportableLatLngFactory.createObject(
+													new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
 				}
 
 				else {
 					idClient_Client.put(id, (ITimeableTransportable) TransportableFactory
 							.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-									new TimeableTransportableLatLng(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
-									new TimeableTransportableLatLng(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true))));
+									TimeableTransportableLatLngFactory.createObject(
+											new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+											TimeableTransportableLatLngFactory.createObject(
+													new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
 				}
 
-				System.out.println("client: " + id + ", " + endDate.getTime() + ", " + oneT);
-				writer.println("client: " + id + ", " + endDate.getTime() + ", " + oneT);
+				System.out.println("client: " + id + ", " + oneT + ", " + isWheelchairUser + ", " + isDouble);
+				writer.println("client: " + id + ", " + oneT + ", " + isWheelchairUser + ", " + isDouble);
+
+				System.out.println("start: "
+						+ startMinDateTime.getTime() + ","
+						+ startDate.getTime() + ", "
+						+ startMaxDateTime.getTime());
+				System.out.println("end: "
+						+ endDate.getTime());
+				writer.println("start: "
+						+ startMinDateTime.getTime() + ","
+						+ startDate.getTime() + ", "
+						+ startMaxDateTime.getTime());
+				writer.println("end: "
+						+ endDate.getTime());
 
 				// volta para casa
 				dateSplit = parts[4].split(":");
@@ -469,19 +511,36 @@ public class RouteExecutor2 {
 				if (count > totalPairPoints) {
 					waitingList.add((ITimeableTransportable) TransportableFactory
 							.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-									new TimeableTransportableLatLng(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
-									new TimeableTransportableLatLng(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true))));
-
+									TimeableTransportableLatLngFactory.createObject(
+											new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+											TimeableTransportableLatLngFactory.createObject(
+													new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
 				}
 				else {
 					idClient_Client.put(id, (ITimeableTransportable) TransportableFactory
 							.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-									new TimeableTransportableLatLng(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false),
-									new TimeableTransportableLatLng(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true))));
+									TimeableTransportableLatLngFactory.createObject(
+											new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+											TimeableTransportableLatLngFactory.createObject(
+													new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
+
 				}
 
-				System.out.println("client: " + id + ", " + endDate.getTime() + ", " + oneT);
-				writer.println("client: " + id + ", " + endDate.getTime() + ", " + oneT);
+				System.out.println("client: " + id + ", " + oneT + ", " + isWheelchairUser + ", " + isDouble);
+				writer.println("client: " + id + ", " + oneT + ", " + isWheelchairUser + ", " + isDouble);
+
+				System.out.println("start: "
+						+ startMinDateTime.getTime() + ","
+						+ startDate.getTime() + ", "
+						+ startMaxDateTime.getTime());
+				System.out.println("end: "
+						+ endDate.getTime());
+				writer.println("start: "
+						+ startMinDateTime.getTime() + ","
+						+ startDate.getTime() + ", "
+						+ startMaxDateTime.getTime());
+				writer.println("end: "
+						+ endDate.getTime());
 
 				count++;
 
@@ -504,7 +563,7 @@ public class RouteExecutor2 {
 				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 00, 0);
 
 		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, waitingList, true, true));
+		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, true, true));
 		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
 				.createObject(new TransporterContainerRequest(costCalculator, waitingList));
 
@@ -570,8 +629,10 @@ public class RouteExecutor2 {
 
 			idClient_Client.put(count, (ITimeableTransportable) TransportableFactory
 					.createObject(new TimeableTransportableRequest(count, r.nextInt(100) + 1.0, TransportableType.Stock,
-							new TimeableTransportableLatLng(count, busStartPoint, new Timeable(busStartDate, definedTolerance, definedTolerance), false),
-							new TimeableTransportableLatLng(count, point, new Timeable(endDate, maxTolerance, maxTolerance), true))));
+							TimeableTransportableLatLngFactory.createObject(
+									new TimeableTransportableLatLngRequest(count, busStartPoint, new Timeable(busStartDate, definedTolerance, definedTolerance), false, false)),
+									TimeableTransportableLatLngFactory.createObject(
+											new TimeableTransportableLatLngRequest(count, point, new Timeable(endDate, maxTolerance, maxTolerance), true, false)))));
 
 			System.out.println("client: " + count + ", " + endDate.getTime() + ", " + maxTolerance);
 
@@ -640,7 +701,7 @@ public class RouteExecutor2 {
 						+ ((ITruck) transporter).getCurrentWeight());
 			}
 
-			for (TimeableTransportableLatLng monteCarloPoint : transporter.getTrajectory()) {
+			for (ITimeableTransportableLatLng monteCarloPoint : transporter.getTrajectory()) {
 
 				String arrivalDateTime = "";
 
@@ -818,7 +879,7 @@ public class RouteExecutor2 {
 
 			// segunda fase
 			IDistanceCalculator distanceCalculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-			ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(distanceCalculator, waitingList, true, false));
+			ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(distanceCalculator, true, false));
 			containerWithOptimisedStrategy.setCostCalculator(costCalculator);
 			containerWithOptimisedStrategy.getWaitingList().clear();
 
