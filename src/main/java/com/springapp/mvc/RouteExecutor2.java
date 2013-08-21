@@ -394,11 +394,11 @@ public class RouteExecutor2 {
 				LatLng point2 = new LatLng(Double.parseDouble(partsPoint[0].trim()), Double.parseDouble(partsPoint[1].trim()));
 
 				boolean isWheelchairUser;
-				if (parts[5].trim().equals("Banco")) {
-					isWheelchairUser = false;
+				if (parts[5].trim().equals("Cadeira")) {
+					isWheelchairUser = true;
 				}
 				else {
-					isWheelchairUser = true;
+					isWheelchairUser = false;
 				}
 
 				boolean isDouble;
@@ -415,44 +415,110 @@ public class RouteExecutor2 {
 				Calendar endDate = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
 						dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
 
-				Period oneT = timeCalculator.getTime(point1, point2);
+				Calendar startDate;
+				Calendar startMinDateTime;
+				Calendar startMaxDateTime;
+				Calendar endMaxDateTime = null;
+				Calendar endMinDateTime = null;
+				Period oneT;
+				Period unlimitedTolerance = new Period(0, 1200, 0, 0);
 
+				oneT = timeCalculator.getTime(point1, point2);
 				twoT = oneT.plus(oneT);
 
-				// tempo minimo ideal do ponto inicial
-				Calendar startDate = new GregorianCalendar();
-				startDate.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
-						- idealTolerance.toStandardDuration().getMillis());
+				if (!parts[3].equals("00:00")) {
 
-				// tempo minimo permitido do ponto inicial
-				Calendar startMinDateTime = new GregorianCalendar();
-				startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
-						- maxTolerance.toStandardDuration().getMillis());
+					// tempo minimo permitido do ponto inicial
+					startMinDateTime = new GregorianCalendar();
+					startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
+							- maxTolerance.toStandardDuration().getMillis());
 
-				// tempo maximo do ponto inicial
-				Calendar startMaxDateTime = new GregorianCalendar();
-				startMaxDateTime.setTimeInMillis(endDate.getTimeInMillis() - oneT.toStandardDuration().getMillis());
+					// tempo minimo ideal do ponto inicial, sem penalidade
+					startDate = startMinDateTime;
+//					startDate = new GregorianCalendar();
+//					startDate.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
+//							- idealTolerance.toStandardDuration().getMillis());
 
-				// tempo minimo ideal do ponto final
-				endDate.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
 
-				// é feio, mas é apenas para testes
-				if (count > totalPairPoints) {
-					waitingList.add((ITimeableTransportable) TransportableFactory
-							.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-									TimeableTransportableLatLngFactory.createObject(
-											new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
-											TimeableTransportableLatLngFactory.createObject(
-													new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
+					// tempo maximo do ponto inicial
+					startMaxDateTime = new GregorianCalendar();
+					startMaxDateTime.setTimeInMillis(endDate.getTimeInMillis() - oneT.toStandardDuration().getMillis());
+
+					// tempo minimo ideal do ponto final
+					endDate.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
+
+					// é feio, mas é apenas para testes
+					if (count > totalPairPoints) {
+						waitingList.add((ITimeableTransportable) TransportableFactory
+								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+												TimeableTransportableLatLngFactory.createObject(
+														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
+					}
+
+					else {
+						idClient_Client.put(id, (ITimeableTransportable) TransportableFactory
+								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+												TimeableTransportableLatLngFactory.createObject(
+														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
+					}
 				}
-
 				else {
-					idClient_Client.put(id, (ITimeableTransportable) TransportableFactory
-							.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-									TimeableTransportableLatLngFactory.createObject(
-											new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
-											TimeableTransportableLatLngFactory.createObject(
-													new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
+					// tempo de volta para casa
+					dateSplit = parts[4].split(":");
+
+					// tempo do ponto final de volta para casa
+					endDate = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+							dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
+
+					endDate.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
+
+					// tempo minimo ideal do ponto inicial
+					startDate = new GregorianCalendar(2013,
+							dateNow.get(Calendar.MONTH) + 1,
+							dateNow.get(Calendar.DAY_OF_MONTH) + 1, 5, 00, 0);
+
+					// tempo minimo permitido do ponto inicial
+					startMinDateTime = new GregorianCalendar();
+					startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
+							- unlimitedTolerance.toStandardDuration().getMillis());
+
+					// tempo maximo do ponto inicial
+					startMaxDateTime = new GregorianCalendar();
+					startMaxDateTime.setTimeInMillis(endDate.getTimeInMillis() - oneT.toStandardDuration().getMillis());
+
+					endMaxDateTime = new GregorianCalendar();
+					endMaxDateTime.setTimeInMillis(endDate.getTimeInMillis() + idealTolerance.toStandardDuration().getMillis());
+
+					endMinDateTime = new GregorianCalendar();
+					endMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - unlimitedTolerance.toStandardDuration().getMillis());
+
+					// tempo minimo ideal do ponto final
+					endDate = new GregorianCalendar(2013,
+							dateNow.get(Calendar.MONTH) + 1,
+							dateNow.get(Calendar.DAY_OF_MONTH) + 1, 7, 00, 0);
+
+					// é feio, mas é apenas para testes
+					if (count > totalPairPoints) {
+						waitingList.add((ITimeableTransportable) TransportableFactory
+								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+												TimeableTransportableLatLngFactory.createObject(
+														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true, true)), isWheelchairUser, isDouble)));
+					}
+
+					else {
+						idClient_Client.put(id, (ITimeableTransportable) TransportableFactory
+								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+												TimeableTransportableLatLngFactory.createObject(
+														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true, true)), isWheelchairUser, isDouble)));
+					}
 				}
 
 				System.out.println("client: " + id + ", " + oneT + ", " + isWheelchairUser + ", " + isDouble);
@@ -462,14 +528,27 @@ public class RouteExecutor2 {
 						+ startMinDateTime.getTime() + ","
 						+ startDate.getTime() + ", "
 						+ startMaxDateTime.getTime());
-				System.out.println("end: "
-						+ endDate.getTime());
 				writer.println("start: "
 						+ startMinDateTime.getTime() + ","
 						+ startDate.getTime() + ", "
 						+ startMaxDateTime.getTime());
-				writer.println("end: "
-						+ endDate.getTime());
+
+				if (endMinDateTime != null) {
+					System.out.println("end: "
+							+ endMinDateTime.getTime() + ","
+							+ endDate.getTime() + ","
+							+ endMaxDateTime.getTime());
+					writer.println("end: "
+							+ endMinDateTime.getTime() + ","
+							+ endDate.getTime() + ","
+							+ endMaxDateTime.getTime());
+				}
+				else {
+					System.out.println("end: "
+							+ endDate.getTime());
+					writer.println("end: "
+							+ endDate.getTime());
+				}
 
 				// volta para casa
 				dateSplit = parts[4].split(":");
@@ -478,51 +557,107 @@ public class RouteExecutor2 {
 
 				twoT = oneT.plus(oneT);
 
-				// tempo minimo permitido do ponto inicial
-				startMinDateTime = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
-						dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
-//						new GregorianCalendar();
-//				startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
-//						- maxTolerance.toStandardDuration().getMillis());
+				if (!parts[4].equals("00:00")) {
+					// tempo minimo permitido do ponto inicial
+					startMinDateTime = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+							dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
+					// new GregorianCalendar();
+					// startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
+					// - maxTolerance.toStandardDuration().getMillis());
 
-				// tempo minimo ideal do ponto inicial
-				startDate = new GregorianCalendar();
-				startDate.setTimeInMillis(startMinDateTime.getTimeInMillis() + idealTolerance.toStandardDuration().getMillis());
+					// tempo minimo ideal do ponto inicial
+					startDate = new GregorianCalendar();
+					startDate.setTimeInMillis(startMinDateTime.getTimeInMillis() + idealTolerance.toStandardDuration().getMillis());
 
-				// tempo maximo do ponto inicial
-				startMaxDateTime = new GregorianCalendar();
-				startMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + maxTolerance.toStandardDuration().getMillis());
+					// tempo maximo do ponto inicial
+					startMaxDateTime = new GregorianCalendar();
+					startMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + unlimitedTolerance.toStandardDuration().getMillis());
 
-				// tempo maximo do ponto final no retorno
-				Calendar endMaxDateTime = new GregorianCalendar();
-				endMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
-						+ maxTolerance.toStandardDuration().getMillis());
+					// tempo maximo do ponto final no retorno, sem limite
+					endMaxDateTime = new GregorianCalendar();
+					endMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
+							+ unlimitedTolerance.toStandardDuration().getMillis());
 
-				// tempo minimo ideal do ponto final
-				endDate = new GregorianCalendar();
-				endDate.setTimeInMillis(startMinDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
-						+ idealTolerance.toStandardDuration().getMillis());
+//					// tempo minimo ideal do ponto final
+//					endDate = new GregorianCalendar();
+//					endDate.setTimeInMillis(startMinDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
+//							+ idealTolerance.toStandardDuration().getMillis());
 
-				// tempo minimo do ponto final
-				Calendar endMinDateTime = new GregorianCalendar();
-				endMinDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + oneT.toStandardDuration().getMillis());
+					// tempo minimo do ponto final
+					endMinDateTime = new GregorianCalendar();
+					endMinDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + oneT.toStandardDuration().getMillis());
 
-				// é feio, mas é apenas para testes
-				if (count > totalPairPoints) {
-					waitingList.add((ITimeableTransportable) TransportableFactory
-							.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-									TimeableTransportableLatLngFactory.createObject(
-											new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
-											TimeableTransportableLatLngFactory.createObject(
-													new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
+					// sem penalidade
+					endDate = endMinDateTime;
+
+					// é feio, mas é apenas para testes
+					if (count > totalPairPoints) {
+						waitingList.add((ITimeableTransportable) TransportableFactory
+								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+												TimeableTransportableLatLngFactory.createObject(
+														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true, true)), isWheelchairUser, isDouble)));
+					}
+					else {
+						idClient_Client.put(id, (ITimeableTransportable) TransportableFactory
+								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+												TimeableTransportableLatLngFactory.createObject(
+														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true, true)), isWheelchairUser, isDouble)));
+
+					}
 				}
 				else {
-					idClient_Client.put(id, (ITimeableTransportable) TransportableFactory
-							.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
-									TimeableTransportableLatLngFactory.createObject(
-											new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
-											TimeableTransportableLatLngFactory.createObject(
-													new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
+
+					// tempo do compromisso
+					dateSplit = parts[3].split(":");
+
+					// tempo minimo permitido do ponto inicial
+					startMinDateTime = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+							dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
+
+					startMinDateTime.add(Calendar.MILLISECOND, (int) (idealTolerance.toStandardDuration().getMillis()));
+
+					// tempo minimo ideal do ponto inicial
+					startDate = new GregorianCalendar();
+					startDate.setTimeInMillis(startMinDateTime.getTimeInMillis() + idealTolerance.toStandardDuration().getMillis());
+
+					// tempo maximo do ponto inicial
+					startMaxDateTime = new GregorianCalendar();
+					startMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + unlimitedTolerance.toStandardDuration().getMillis());
+
+					// tempo maximo do ponto final no retorno
+					endMaxDateTime = new GregorianCalendar();
+					endMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
+							+ unlimitedTolerance.toStandardDuration().getMillis());
+
+					// tempo minimo do ponto final
+					endMinDateTime = new GregorianCalendar();
+					endMinDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + oneT.toStandardDuration().getMillis());
+
+					// sem penalidade
+					endDate = endMinDateTime;
+
+					// é feio, mas é apenas para testes
+					if (count > totalPairPoints) {
+						waitingList.add((ITimeableTransportable) TransportableFactory
+								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+												TimeableTransportableLatLngFactory.createObject(
+														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true, true)), isWheelchairUser, isDouble)));
+					}
+					else {
+						idClient_Client.put(id, (ITimeableTransportable) TransportableFactory
+								.createObject(new TimeableTransportableRequest(id, TransportableType.Person,
+										TimeableTransportableLatLngFactory.createObject(
+												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
+												TimeableTransportableLatLngFactory.createObject(
+														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true, true)), isWheelchairUser, isDouble)));
+
+					}
 
 				}
 
@@ -534,13 +669,17 @@ public class RouteExecutor2 {
 						+ startDate.getTime() + ", "
 						+ startMaxDateTime.getTime());
 				System.out.println("end: "
-						+ endDate.getTime());
+						+ endMinDateTime.getTime() + ","
+						+ endDate.getTime() + ","
+						+ endMaxDateTime.getTime());
 				writer.println("start: "
 						+ startMinDateTime.getTime() + ","
 						+ startDate.getTime() + ", "
 						+ startMaxDateTime.getTime());
 				writer.println("end: "
-						+ endDate.getTime());
+						+ endMinDateTime.getTime() + ","
+						+ endDate.getTime() + ","
+						+ endMaxDateTime.getTime());
 
 				count++;
 
@@ -563,7 +702,7 @@ public class RouteExecutor2 {
 				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 00, 0);
 
 		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, true, true));
+		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, true, false));
 		ITransporterContainer vehicleContainer = (ITransporterContainer) TransporterContainerFactory
 				.createObject(new TransporterContainerRequest(costCalculator, waitingList));
 
