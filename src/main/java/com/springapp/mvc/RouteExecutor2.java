@@ -100,6 +100,7 @@ public class RouteExecutor2 {
 	static ITimeableTransporter getNotFullVehicle(
 			ITransporterContainer vehicleContainer, int quantityBus, double weight, int cycle) {
 		Random randomGenerator = new Random();
+		int fullValue = 15;
 
 		ITimeableTransporter vehicle = vehicleContainer.get(randomGenerator.nextInt(quantityBus));
 
@@ -109,8 +110,7 @@ public class RouteExecutor2 {
 				return vehicle;
 			}
 		}
-
-		else if (!vehicle.isFull()) {
+		else if (vehicle.size() < fullValue) {
 			return vehicle;
 		}
 
@@ -128,7 +128,7 @@ public class RouteExecutor2 {
 				}
 			}
 
-			else if (!vehicle.isFull()) {
+			else if (vehicle.size() < fullValue) {
 				return vehicle;
 			}
 		}
@@ -374,6 +374,13 @@ public class RouteExecutor2 {
 		LatLng busStartPoint = new LatLng(-23.503179072016273, -46.65936302124023);
 		LatLng busEndPoint = busStartPoint;
 
+		Calendar busStartDate = new GregorianCalendar(2013,
+				dateNow.get(Calendar.MONTH) + 1,
+				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 4, 30, 0);
+		Calendar busEndDate = new GregorianCalendar(2013,
+				dateNow.get(Calendar.MONTH) + 1,
+				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 00, 0);
+
 		ITimeCalculator timeCalculator = TimeCalculatorFactory.createObject(new TimeCalculatorRequest(DistanceType.Real, true));
 
 		BufferedReader br = new BufferedReader(new FileReader("C:/Users/su.yinhe/logistica/webservice/programacaoSPTrans.txt"));
@@ -434,11 +441,9 @@ public class RouteExecutor2 {
 							- maxTolerance.toStandardDuration().getMillis());
 
 					// tempo minimo ideal do ponto inicial, sem penalidade
-					startDate = startMinDateTime;
-//					startDate = new GregorianCalendar();
-//					startDate.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
-//							- idealTolerance.toStandardDuration().getMillis());
-
+					startDate = new GregorianCalendar();
+					startDate.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
+							- idealTolerance.toStandardDuration().getMillis());
 
 					// tempo maximo do ponto inicial
 					startMaxDateTime = new GregorianCalendar();
@@ -471,35 +476,43 @@ public class RouteExecutor2 {
 					dateSplit = parts[4].split(":");
 
 					// tempo do ponto final de volta para casa
-					endDate = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
+					endMaxDateTime = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
 							dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
 
-					endDate.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
-
-					// tempo minimo ideal do ponto inicial
-					startDate = new GregorianCalendar(2013,
-							dateNow.get(Calendar.MONTH) + 1,
-							dateNow.get(Calendar.DAY_OF_MONTH) + 1, 5, 00, 0);
+					endMaxDateTime.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
 
 					// tempo minimo permitido do ponto inicial
 					startMinDateTime = new GregorianCalendar();
-					startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
+					startMinDateTime.setTimeInMillis(endMaxDateTime.getTimeInMillis() - twoT.toStandardDuration().getMillis()
 							- unlimitedTolerance.toStandardDuration().getMillis());
 
 					// tempo maximo do ponto inicial
 					startMaxDateTime = new GregorianCalendar();
-					startMaxDateTime.setTimeInMillis(endDate.getTimeInMillis() - oneT.toStandardDuration().getMillis());
+					startMaxDateTime.setTimeInMillis(endMaxDateTime.getTimeInMillis() - oneT.toStandardDuration().getMillis());
 
-					endMaxDateTime = new GregorianCalendar();
-					endMaxDateTime.setTimeInMillis(endDate.getTimeInMillis() + idealTolerance.toStandardDuration().getMillis());
-
+					// tempo maximo do ponto final
 					endMinDateTime = new GregorianCalendar();
-					endMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - unlimitedTolerance.toStandardDuration().getMillis());
+					endMinDateTime.setTimeInMillis(endMaxDateTime.getTimeInMillis() - unlimitedTolerance.toStandardDuration().getMillis());
+
+					Period period = timeCalculator.getTime(busStartPoint, point1);
+
+					// tempo minimo ideal do ponto inicial
+					startDate = new GregorianCalendar();
+					startDate.setTimeInMillis(busStartDate.getTimeInMillis() + period.toStandardDuration().getMillis()
+							+ idealTolerance.toStandardDuration().getMillis());
 
 					// tempo minimo ideal do ponto final
-					endDate = new GregorianCalendar(2013,
+					endDate = new GregorianCalendar();
+					endDate.setTimeInMillis(startDate.getTimeInMillis() + oneT.toStandardDuration().getMillis());
+
+					Calendar seven = new GregorianCalendar(2013,
 							dateNow.get(Calendar.MONTH) + 1,
-							dateNow.get(Calendar.DAY_OF_MONTH) + 1, 7, 00, 0);
+							dateNow.get(Calendar.DAY_OF_MONTH) + 1, 4, 30, 0);
+
+					if (endDate.before(seven)) {
+						endDate = seven;
+						startDate.setTimeInMillis(endDate.getTimeInMillis() - oneT.toStandardDuration().getMillis());
+					}
 
 					// é feio, mas é apenas para testes
 					if (count > totalPairPoints) {
@@ -554,8 +567,8 @@ public class RouteExecutor2 {
 				dateSplit = parts[4].split(":");
 
 				oneT = timeCalculator.getTime(point2, point1);
-
 				twoT = oneT.plus(oneT);
+				id = -id;
 
 				if (!parts[4].equals("00:00")) {
 					// tempo minimo permitido do ponto inicial
@@ -692,14 +705,7 @@ public class RouteExecutor2 {
 		br.close();
 
 		writer.println("countClients: " + count);
-
-//		Calendar dateNow = Calendar.getInstance();
-		Calendar busStartDate = new GregorianCalendar(2013,
-				dateNow.get(Calendar.MONTH) + 1,
-				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 4, 30, 0);
-		Calendar busEndDate = new GregorianCalendar(2013,
-				dateNow.get(Calendar.MONTH) + 1,
-				dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 00, 0);
+		writer.flush();
 
 		IDistanceCalculator calculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
 		ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(calculator, true, false));
@@ -1014,22 +1020,22 @@ public class RouteExecutor2 {
 			System.out.println("End: " + GregorianCalendar.getInstance().getTime());
 			writer.println("End: " + GregorianCalendar.getInstance().getTime());
 
-			RouteExecutor2.printResults(containerWithOptimisedStrategy, writer);
-
-			// segunda fase
-			IDistanceCalculator distanceCalculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
-			ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(distanceCalculator, true, false));
-			containerWithOptimisedStrategy.setCostCalculator(costCalculator);
-			containerWithOptimisedStrategy.getWaitingList().clear();
-
-			monteCarlo = MonteCarloFactory.createObject(new MonteCarloRequest(decisionRule, containerWithOptimisedStrategy,
-					PermutatorFactory.createObject(new PermutatorRequest(hasStartpoint))));
-
-			System.out.println("SecondStart: " + GregorianCalendar.getInstance().getTime());
-			writer.println("SecondStart: " + GregorianCalendar.getInstance().getTime());
-			containerWithOptimisedStrategy = monteCarlo.run();
-			System.out.println("SecondEnd: " + GregorianCalendar.getInstance().getTime());
-			writer.println("SecondEnd: " + GregorianCalendar.getInstance().getTime());
+//			RouteExecutor2.printResults(containerWithOptimisedStrategy, writer);
+//
+//			// segunda fase
+//			IDistanceCalculator distanceCalculator = DistanceCalculatorFactory.createObject(new DistanceCalculatorRequest(DistanceType.Real, true));
+//			ICostCalculator costCalculator = CostCalculatorFactory.createObject(new CostCalculatorRequest(distanceCalculator, true, false));
+//			containerWithOptimisedStrategy.setCostCalculator(costCalculator);
+//			containerWithOptimisedStrategy.getWaitingList().clear();
+//
+//			monteCarlo = MonteCarloFactory.createObject(new MonteCarloRequest(decisionRule, containerWithOptimisedStrategy,
+//					PermutatorFactory.createObject(new PermutatorRequest(hasStartpoint))));
+//
+//			System.out.println("SecondStart: " + GregorianCalendar.getInstance().getTime());
+//			writer.println("SecondStart: " + GregorianCalendar.getInstance().getTime());
+//			containerWithOptimisedStrategy = monteCarlo.run();
+//			System.out.println("SecondEnd: " + GregorianCalendar.getInstance().getTime());
+//			writer.println("SecondEnd: " + GregorianCalendar.getInstance().getTime());
 			// fim da segunda fase
 
 			bufferRead.close();
