@@ -33,6 +33,7 @@ import com.maplink.framework.routing.vehiclerouting.distanceCalculator.factory.D
 import com.maplink.framework.routing.vehiclerouting.distanceCalculator.requests.DistanceCalculatorRequest;
 import com.maplink.framework.routing.vehiclerouting.location.ITimeableTransportableLatLng;
 import com.maplink.framework.routing.vehiclerouting.location.LatLng;
+import com.maplink.framework.routing.vehiclerouting.location.SPTransTimeableTransportableLatLng;
 import com.maplink.framework.routing.vehiclerouting.location.factory.TimeableTransportableLatLngFactory;
 import com.maplink.framework.routing.vehiclerouting.location.requests.TimeableTransportableLatLngRequest;
 import com.maplink.framework.routing.vehiclerouting.montecarlo.IMonteCarlo;
@@ -360,13 +361,8 @@ public class RouteExecutor2 {
 			List<ITimeableTransportable> waitingList, int totalPairPoints, int quantityBus, Integer busCapacity, PrintWriter writer)
 					throws Exception {
 
-//		Map<LatLng, Tuple<LatLng, Period>> pointMap = new HashMap<LatLng, Tuple<LatLng, Period>>();
-
-		new HashMap<LatLng, Tuple<LatLng, Tuple<Period, Calendar>>>();
-
 		Calendar dateNow = Calendar.getInstance();
 		int count = 1;
-		Period twoT; // 2T+30min
 		Period maxTolerance = new Period(0, 60, 0, 0);
 		Period idealTolerance = new Period(0, 30, 0, 0);
 		Period zeroPeriod = new Period(0);
@@ -392,11 +388,11 @@ public class RouteExecutor2 {
 
 				int id = Integer.valueOf(parts[0]);
 
-				// casa
+				// coordenadas da casa
 				String[] partsPoint = parts[1].split("#");
 				LatLng point1 = new LatLng(Double.parseDouble(partsPoint[0].trim()), Double.parseDouble(partsPoint[1].trim()));
 
-				// compromisso
+				// coordenadas do compromisso
 				partsPoint = parts[2].split("#");
 				LatLng point2 = new LatLng(Double.parseDouble(partsPoint[0].trim()), Double.parseDouble(partsPoint[1].trim()));
 
@@ -408,6 +404,7 @@ public class RouteExecutor2 {
 					isWheelchairUser = false;
 				}
 
+				// acompanhante
 				boolean isDouble;
 				if (parts[6].trim().equals("Sim")) {
 					isDouble = true;
@@ -416,9 +413,10 @@ public class RouteExecutor2 {
 					isDouble = false;
 				}
 
+				// horário do compromisso
 				String[] dateSplit = parts[3].split(":");
 
-				// tempo do compromisso na ida do arquivo
+				// horário do compromisso do arquivo na ida
 				Calendar endDate = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
 						dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
 
@@ -428,8 +426,10 @@ public class RouteExecutor2 {
 				Calendar endMaxDateTime = null;
 				Calendar endMinDateTime = null;
 				Period oneT;
+				Period twoT; // 2T
 				Period unlimitedTolerance = new Period(0, 1200, 0, 0);
 
+				// tempo da viagem da casa para o compromisso
 				oneT = timeCalculator.getTime(point1, point2);
 				twoT = oneT.plus(oneT);
 
@@ -440,7 +440,8 @@ public class RouteExecutor2 {
 					startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
 							- maxTolerance.toStandardDuration().getMillis());
 
-					// tempo minimo ideal do ponto inicial, sem penalidade
+					// tempo minimo ideal do ponto inicial, limite para nao ter penalidade
+					// tempo para ser setado caso o onibus chegue mto antes
 					startDate = new GregorianCalendar();
 					startDate.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
 							- idealTolerance.toStandardDuration().getMillis());
@@ -449,7 +450,7 @@ public class RouteExecutor2 {
 					startMaxDateTime = new GregorianCalendar();
 					startMaxDateTime.setTimeInMillis(endDate.getTimeInMillis() - oneT.toStandardDuration().getMillis());
 
-					// tempo minimo ideal do ponto final
+					// tempo minimo ideal do ponto final, limite para nao ter penalidade
 					endDate.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
 
 					// é feio, mas é apenas para testes
@@ -471,48 +472,42 @@ public class RouteExecutor2 {
 														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, idealTolerance, idealTolerance), true, true)), isWheelchairUser, isDouble)));
 					}
 				}
+				// nao há horário definido para o compromisso, então pode ser até 30 min antes de ser buscado para ir para casa (viagem de volta)
 				else {
-					// tempo de volta para casa
+					// horario da volta para casa
 					dateSplit = parts[4].split(":");
 
-					// tempo do ponto final de volta para casa
+					// hoario do ponto final de volta para casa
 					endMaxDateTime = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
 							dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
 
+					// 30 min antes do horario para voltar para casa
 					endMaxDateTime.add(Calendar.MILLISECOND, (int) (-idealTolerance.toStandardDuration().getMillis()));
+
+					// tempo do ponto inicial do onibus para a casa do usuario
+					Period period = timeCalculator.getTime(busStartPoint, point1);
 
 					// tempo minimo permitido do ponto inicial
 					startMinDateTime = new GregorianCalendar();
-					startMinDateTime.setTimeInMillis(endMaxDateTime.getTimeInMillis() - twoT.toStandardDuration().getMillis()
-							- unlimitedTolerance.toStandardDuration().getMillis());
+					startMinDateTime.setTimeInMillis(busStartDate.getTimeInMillis() + period.toStandardDuration().getMillis());
 
 					// tempo maximo do ponto inicial
 					startMaxDateTime = new GregorianCalendar();
 					startMaxDateTime.setTimeInMillis(endMaxDateTime.getTimeInMillis() - oneT.toStandardDuration().getMillis());
 
-					// tempo maximo do ponto final
-					endMinDateTime = new GregorianCalendar();
-					endMinDateTime.setTimeInMillis(endMaxDateTime.getTimeInMillis() - unlimitedTolerance.toStandardDuration().getMillis());
-
-					Period period = timeCalculator.getTime(busStartPoint, point1);
-
-					// tempo minimo ideal do ponto inicial
-					startDate = new GregorianCalendar();
-					startDate.setTimeInMillis(busStartDate.getTimeInMillis() + period.toStandardDuration().getMillis()
-							+ idealTolerance.toStandardDuration().getMillis());
-
-					// tempo minimo ideal do ponto final
-					endDate = new GregorianCalendar();
-					endDate.setTimeInMillis(startDate.getTimeInMillis() + oneT.toStandardDuration().getMillis());
-
-					Calendar seven = new GregorianCalendar(2013,
+					// tempo maximo do ponto final, 6:00
+					endMinDateTime = new GregorianCalendar(2013,
 							dateNow.get(Calendar.MONTH) + 1,
-							dateNow.get(Calendar.DAY_OF_MONTH) + 1, 4, 30, 0);
+							dateNow.get(Calendar.DAY_OF_MONTH) + 1, 6, 00, 0);
 
-					if (endDate.before(seven)) {
-						endDate = seven;
-						startDate.setTimeInMillis(endDate.getTimeInMillis() - oneT.toStandardDuration().getMillis());
-					}
+					// tempo minimo ideal do ponto final, 6:30, limite para nao ter penalidade
+					endDate = new GregorianCalendar();
+					endDate.setTimeInMillis(endMinDateTime.getTimeInMillis() + idealTolerance.toStandardDuration().getMillis());
+
+					// tempo minimo ideal do ponto inicial, limite para nao ter penalidade
+					// tempo para ser setado caso o onibus chegue mto antes
+					startDate = new GregorianCalendar();
+					startDate.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis());
 
 					// é feio, mas é apenas para testes
 					if (count > totalPairPoints) {
@@ -563,7 +558,7 @@ public class RouteExecutor2 {
 							+ endDate.getTime());
 				}
 
-				// volta para casa
+				// tempo de volta para casa
 				dateSplit = parts[4].split(":");
 
 				oneT = timeCalculator.getTime(point2, point1);
@@ -571,37 +566,32 @@ public class RouteExecutor2 {
 				id = -id;
 
 				if (!parts[4].equals("00:00")) {
+
 					// tempo minimo permitido do ponto inicial
+					// tempo para ser setado caso o onibus chegue mto antes
 					startMinDateTime = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
 							dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
-					// new GregorianCalendar();
-					// startMinDateTime.setTimeInMillis(endDate.getTimeInMillis() - twoT.toStandardDuration().getMillis()
-					// - maxTolerance.toStandardDuration().getMillis());
 
-					// tempo minimo ideal do ponto inicial
+					// tempo minimo ideal do ponto inicial, 30 depois do marcado, limite para penalidade
 					startDate = new GregorianCalendar();
 					startDate.setTimeInMillis(startMinDateTime.getTimeInMillis() + idealTolerance.toStandardDuration().getMillis());
 
-					// tempo maximo do ponto inicial
+					// tempo maximo do ponto inicial, 1h depois do marcado
 					startMaxDateTime = new GregorianCalendar();
-					startMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + unlimitedTolerance.toStandardDuration().getMillis());
+					startMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + maxTolerance.toStandardDuration().getMillis());
 
 					// tempo maximo do ponto final no retorno, sem limite
 					endMaxDateTime = new GregorianCalendar();
-					endMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
+					endMaxDateTime.setTimeInMillis(startMaxDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
 							+ unlimitedTolerance.toStandardDuration().getMillis());
-
-//					// tempo minimo ideal do ponto final
-//					endDate = new GregorianCalendar();
-//					endDate.setTimeInMillis(startMinDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
-//							+ idealTolerance.toStandardDuration().getMillis());
 
 					// tempo minimo do ponto final
 					endMinDateTime = new GregorianCalendar();
 					endMinDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + oneT.toStandardDuration().getMillis());
 
+					// tempo minimo ideal do ponto final
 					// sem penalidade
-					endDate = endMinDateTime;
+					endDate = endMaxDateTime;
 
 					// é feio, mas é apenas para testes
 					if (count > totalPairPoints) {
@@ -619,7 +609,6 @@ public class RouteExecutor2 {
 												new TimeableTransportableLatLngRequest(id, point1, new Timeable(startDate, startMinDateTime, startMaxDateTime), false, true)),
 												TimeableTransportableLatLngFactory.createObject(
 														new TimeableTransportableLatLngRequest(id, point2, new Timeable(endDate, endMinDateTime, endMaxDateTime), true, true)), isWheelchairUser, isDouble)));
-
 					}
 				}
 				else {
@@ -628,20 +617,23 @@ public class RouteExecutor2 {
 					dateSplit = parts[3].split(":");
 
 					// tempo minimo permitido do ponto inicial
+					// tempo para ser setado caso o onibus chegue mto antes
 					startMinDateTime = new GregorianCalendar(2013, dateNow.get(Calendar.MONTH) + 1,
 							dateNow.get(Calendar.DAY_OF_MONTH) + 1, Integer.valueOf(dateSplit[0]), Integer.valueOf(dateSplit[1]), 0);
 
+					// 30 min depois do compromisso
 					startMinDateTime.add(Calendar.MILLISECOND, (int) (idealTolerance.toStandardDuration().getMillis()));
+
+					// tempo maximo do ponto inicial, 21:00
+					startMaxDateTime = new GregorianCalendar(2013,
+							dateNow.get(Calendar.MONTH) + 1,
+							dateNow.get(Calendar.DAY_OF_MONTH) + 1, 21, 0, 0);
 
 					// tempo minimo ideal do ponto inicial
 					startDate = new GregorianCalendar();
-					startDate.setTimeInMillis(startMinDateTime.getTimeInMillis() + idealTolerance.toStandardDuration().getMillis());
+					startDate.setTimeInMillis(startMaxDateTime.getTimeInMillis() - idealTolerance.toStandardDuration().getMillis());
 
-					// tempo maximo do ponto inicial
-					startMaxDateTime = new GregorianCalendar();
-					startMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + unlimitedTolerance.toStandardDuration().getMillis());
-
-					// tempo maximo do ponto final no retorno
+					// tempo maximo do ponto final no retorno, sem limite
 					endMaxDateTime = new GregorianCalendar();
 					endMaxDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + twoT.toStandardDuration().getMillis()
 							+ unlimitedTolerance.toStandardDuration().getMillis());
@@ -650,8 +642,9 @@ public class RouteExecutor2 {
 					endMinDateTime = new GregorianCalendar();
 					endMinDateTime.setTimeInMillis(startMinDateTime.getTimeInMillis() + oneT.toStandardDuration().getMillis());
 
+					// tempo minimo ideal do ponto final
 					// sem penalidade
-					endDate = endMinDateTime;
+					endDate = endMaxDateTime;
 
 					// é feio, mas é apenas para testes
 					if (count > totalPairPoints) {
@@ -858,6 +851,12 @@ public class RouteExecutor2 {
 
 				if (monteCarloPoint.getCurrentDeliveryTime() != null) {
 					currentDateTime = monteCarloPoint.getCurrentDeliveryTime().getTime().toString();
+
+					if (monteCarloPoint instanceof SPTransTimeableTransportableLatLng) {
+						Calendar date = (Calendar) monteCarloPoint.getCurrentDeliveryTime().getTime().clone();
+						date.add(Calendar.MILLISECOND, -600000);
+						currentDateTime = date.getTime().toString();
+					}
 				}
 
 				if (transporter instanceof ITruck) {
@@ -1041,6 +1040,7 @@ public class RouteExecutor2 {
 			bufferRead.close();
 
 			String result = printResults(containerWithOptimisedStrategy, writer);
+			writer.print(result);
 			writer.close();
 
 			return result;
